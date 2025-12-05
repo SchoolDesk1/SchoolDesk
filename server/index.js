@@ -40,6 +40,19 @@ app.use('/api/admin', superAdminRoutes);
 app.use('/api/partner', partnerRoutes);
 app.use('/api/performance', performanceRoutes); // Performance monitoring
 
+// Root and Health Check routes
+app.get('/', (req, res) => {
+    res.json({
+        message: 'SchoolDesk API is running!',
+        status: 'healthy',
+        version: '1.0.0'
+    });
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Serve React Frontend (Production)
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
