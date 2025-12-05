@@ -51,7 +51,7 @@ const PremiumLayout = ({ children, title, subtitle }) => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#0A0E27] text-white overflow-hidden relative selection:bg-purple-500/30 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#0A0E27] text-white overflow-hidden relative selection:bg-purple-500/30 flex items-center justify-center p-4 pt-20 sm:pt-4">
             <canvas id="particles-auth" className="fixed inset-0 z-0 pointer-events-none"></canvas>
 
             {/* Dynamic Background */}
@@ -69,17 +69,17 @@ const PremiumLayout = ({ children, title, subtitle }) => {
                 <div className="p-2 rounded-full bg-white/5 border border-white/10 group-hover:bg-white/10 transition-all">
                     <ArrowLeft size={20} />
                 </div>
-                <span>Back to Home</span>
+                <span className="hidden sm:inline">Back to Home</span>
             </button>
 
             {/* Main Content Card */}
             <div className="relative z-10 w-full max-w-md">
                 <div className="text-center mb-8 animate-in" style={{ animationDelay: '0.1s' }}>
-                    <h1 className="text-3xl font-bold gradient-text-animated mb-2">{title}</h1>
-                    {subtitle && <p className="text-gray-400">{subtitle}</p>}
+                    <h1 className="text-2xl sm:text-3xl font-bold gradient-text-animated mb-2">{title}</h1>
+                    {subtitle && <p className="text-gray-400 text-sm sm:text-base">{subtitle}</p>}
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl animate-in" style={{ animationDelay: '0.2s' }}>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl animate-in" style={{ animationDelay: '0.2s' }}>
                     {children}
                 </div>
             </div>
