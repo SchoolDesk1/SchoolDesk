@@ -5,6 +5,7 @@ import logo from '../assets/logo.png';
 import PremiumLayout from '../components/PremiumLayout';
 import SEO from '../components/SEO';
 import { Loader2, Lock, Mail, Phone, User } from 'lucide-react';
+import { getApiUrl } from '../config/api';
 
 const Login = () => {
     const [role, setRole] = useState('school_admin');
@@ -46,7 +47,7 @@ const Login = () => {
                 body = { phone, password: classPassword, role };
             }
 
-            const response = await fetch(endpoint, {
+            const response = await fetch(getApiUrl(endpoint), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
@@ -54,7 +55,11 @@ const Login = () => {
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Server error: Backend is not responding correctly.');
+                // Check if we're in production without backend configured
+                if (!import.meta.env.VITE_API_URL) {
+                    throw new Error('Backend server not configured. Please contact support.');
+                }
+                throw new Error('Server temporarily unavailable. Please try again.');
             }
 
             const data = await response.json();
