@@ -1,0 +1,846 @@
+isSchoolAdmin called at 2025-11-24T16:28:13.329Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:28:13.345Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:30:11.515Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:30:11.526Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:31:20.666Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:31:20.677Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Student 1764001880673, Role: parent, Fee: 500
+createUser DB error: SQLITE_ERROR: table users has no column named name
+isSchoolAdmin called at 2025-11-24T16:34:38.215Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:34:38.229Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Student 1764002078223, Role: parent, Fee: 500
+createUser success. ID: 5
+isSchoolAdmin called at 2025-11-24T16:34:38.395Z
+req type: object
+res type: object
+req.userRole: school_admin
+Initial fee created.
+isSchoolAdmin called at 2025-11-24T16:34:38.412Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:34:38.431Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:52:28.863Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:52:28.877Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Student 1764003148871, Role: parent, Fee: 750
+createUser success. ID: 6
+isSchoolAdmin called at 2025-11-24T16:52:28.903Z
+req type: object
+res type: object
+req.userRole: school_admin
+Initial fee created.
+isSchoolAdmin called at 2025-11-24T16:52:28.914Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:52:28.932Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:52:28.943Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: No Fee Student 1764003148938, Role: parent, Fee: undefined
+createUser success. ID: 7
+isSchoolAdmin called at 2025-11-24T16:52:28.962Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:52:28.976Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Teacher, Role: teacher, Fee: undefined
+createUser success. ID: 8
+isSchoolAdmin called at 2025-11-24T16:57:41.062Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:41.076Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:41.091Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:41.102Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:42.762Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:42.768Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:42.777Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:57:42.782Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:05.693Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:05.723Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:33.011Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:36.572Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:36.590Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:38.120Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:38.139Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:39.707Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:39.723Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:40.818Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:40.836Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:43.421Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:44.749Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:44.762Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:58:55.909Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:59:05.729Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:59:06.857Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:59:08.468Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:59:08.475Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T16:59:18.106Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:09.981Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:11.066Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:12.478Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:22.548Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:22.571Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:27.459Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:29.593Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:00:29.598Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:22.900Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:24.157Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:25.652Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:29.219Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:29.235Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:30.418Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:30.440Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:31.485Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:31.531Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:32.430Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:32.446Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:39.921Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:03:39.925Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:18.620Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:18.626Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:18.633Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:18.639Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:21.289Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:23.653Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:29.664Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:30.649Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:32.747Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:33.703Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:04:33.708Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:15:53.035Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:15:53.040Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:18.677Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:18.695Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:18.710Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:18.727Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:18.737Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:47.134Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:47.139Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:47.147Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:47.152Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:49.868Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:51.546Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:55.049Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:55.070Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:55.085Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:55.100Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:17:55.110Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:11.901Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:14.085Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:14.103Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:15.650Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:15.671Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:17.518Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:17.523Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:18:32.340Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:23:34.273Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:23:34.282Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Delete Student, Role: parent, Fee: undefined
+createUser success. ID: 9
+isSchoolAdmin called at 2025-11-24T17:23:34.298Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:23:34.307Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:23:34.325Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:00.473Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:00.481Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:00.495Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:00.505Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:01.952Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:07.253Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:15.174Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:17.185Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:17.202Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:17.971Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:17.991Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:20.963Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:22.642Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:23.675Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:24.998Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:24:25.003Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:36.178Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:36.185Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:36.196Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:36.205Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:37.799Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:37.804Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:37.813Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:37.818Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:43.310Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:43.346Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:48.600Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:49.758Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:25:58.044Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:26:06.071Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:28:19.176Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:28:20.231Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:29:29.881Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:29:29.886Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:29:41.941Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:29:53.057Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:15.633Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:15.638Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:15.644Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:15.648Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:21.901Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:23.497Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:26.799Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:30:33.367Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:07.179Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:07.184Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:07.192Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:07.197Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:11.821Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:33:17.426Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:22.394Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:22.400Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:22.408Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:22.413Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:27.708Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:35:33.761Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:38:50.265Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:38:50.273Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Delete Student, Role: parent, Fee: undefined
+createUser success. ID: 10
+isSchoolAdmin called at 2025-11-24T17:38:50.294Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:38:50.301Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:38:50.314Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:39:37.785Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:39:37.807Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:39:37.817Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:29.534Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:29.545Z
+req type: object
+res type: object
+req.userRole: school_admin
+createUser called. Name: Test Delete Student, Role: parent, Fee: undefined
+createUser success. ID: 11
+isSchoolAdmin called at 2025-11-24T17:40:29.566Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:29.576Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:29.592Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:53.959Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:53.974Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:53.991Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:40:53.998Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:06.798Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:25.985Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:25.992Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:42.176Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:48.506Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:48.512Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:48.524Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:48.541Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:41:54.280Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:42:00.904Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:42:09.090Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:23.043Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:31.620Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:31.628Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:31.637Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:31.642Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:54:34.279Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:56:05.863Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:56:12.424Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:59:32.362Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:59:32.369Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:59:33.782Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:59:34.852Z
+req type: object
+res type: object
+req.userRole: school_admin
+isSchoolAdmin called at 2025-11-24T17:59:35.914Z
+req type: object
+res type: object
+req.userRole: school_admin

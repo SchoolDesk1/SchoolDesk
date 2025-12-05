@@ -1,0 +1,143 @@
+# ========================================
+# DEPENDENCIES
+# ========================================
+node_modules/
+package-lock.json
+yarn.lock
+
+# ========================================
+# DATABASE FILES (CRITICAL - DON'T UPLOAD!)
+# ========================================
+*.db
+*.sqlite
+*.sqlite3
+server/school.db
+school.db
+
+# ========================================
+# UPLOADED FILES & USER DATA
+# ========================================
+uploads/
+server/uploads/
+*.pdf
+*.doc
+*.docx
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+# Exception: Keep placeholder images if any
+!**/placeholder.png
+
+# ========================================
+# BUILD & DIST FOLDERS
+# ========================================
+dist/
+build/
+client/dist/
+client/build/
+*.tsbuildinfo
+
+# ========================================
+# ENVIRONMENT & CONFIG FILES
+# ========================================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+
+# ========================================
+# LOG FILES
+# ========================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ========================================
+# TEMPORARY & BACKUP FILES
+# ========================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.bak
+*.backup
+*_backup.*
+*_old.*
+
+# Migration & Fix Scripts (keep in repo but can exclude if needed)
+# server/migrations/fix_*.js
+# server/migrations/create_tables_direct.js
+
+# Debug & Diagnostic Files
+server/check_*.js
+server/diagnose_*.sql
+fix_dashboard_v2.js
+generate_dashboard.ps1
+
+# ========================================
+# IDE & EDITOR SETTINGS
+# ========================================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.iml
+
+# ========================================
+# OS SPECIFIC FILES
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ========================================
+# TESTING & COVERAGE
+# ========================================
+coverage/
+.nyc_output/
+*.cover
+.coverage
+.cache
+
+# ========================================
+# DOCUMENTATION THAT MIGHT BE SENSITIVE
+# ========================================
+# Uncomment if you don't want these in repo
+# FIXES_APPLIED.md
+# ISSUE_FIXED.md
+# TIMETABLE_ISSUE_FIXED.md
+# PREMIUM_LANDING_PAGE.md
+
+# ========================================
+# MISC
+# ========================================
+.cache/
+.parcel-cache/
+.vite/
+.next/
+out/
+
+# Keep README and important docs
+!README.md
+!LICENSE
+!CHANGELOG.md
+!CONTRIBUTING.md
