@@ -27,7 +27,8 @@ server/uploads/
 *.png
 *.gif
 *.webp
-# Exception: Keep placeholder images if any
+# Exception: Keep app assets (logo, icons, etc.)
+!client/src/assets/**
 !**/placeholder.png
 
 # ========================================
