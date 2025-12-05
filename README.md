@@ -4,12 +4,7 @@ A comprehensive SaaS platform for schools to manage communication, homework, fee
 
 ## 🌟 Features
 
-### For Super Admins
-- Manage multiple schools
-- Approve/suspend/delete schools
-- Partner management & commissions
-- Promo code management
-- View analytics and subscriptions
+
 
 ### For School Admins
 - Create and manage classes
@@ -100,16 +95,7 @@ npm run dev         # Development server
 npm run build       # Production build
 ```
 
-## 🔐 Default Credentials
 
-**Super Admin:**
-- Email: `admin@example.com`
-- Password: `password123`
-- Access: `/admin-secret-login`
-
-**Partner Demo:**
-- Email: `partner@demo.com`
-- Password: `partner123`
 
 ## 💰 Pricing Plans
 
