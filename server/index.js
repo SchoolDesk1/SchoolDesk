@@ -58,6 +58,21 @@ app.get('/api/health', (req, res) => {
 // Serve React Frontend (Production)
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+// API 404 fallback - must come BEFORE SPA fallback
+app.use('/api/*', (req, res) => {
+    res.status(404).json({
+        error: 'Not found',
+        message: `API endpoint ${req.originalUrl} does not exist`,
+        method: req.method
+    });
+});
+
+// SPA fallback for non-API routes (client-side routing)
+app.get('*', (req, res) => {
+    // Only serve index.html for non-API routes
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Error:', err.message);
@@ -66,6 +81,7 @@ app.use((err, req, res, next) => {
         message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });
 });
+
 
 app.listen(PORT, () => {
     console.log(`
