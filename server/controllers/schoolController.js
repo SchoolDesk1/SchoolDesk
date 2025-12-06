@@ -426,17 +426,34 @@ exports.getUsers = async (req, res) => {
     const schoolId = req.schoolId;
     const { class_id, role } = req.query;
 
+    console.log('getUsers called - schoolId:', schoolId, 'class_id:', class_id, 'role:', role);
+
     try {
+        // First get all class IDs for this school
+        const { data: schoolClasses, error: classError } = await supabase
+            .from('classes')
+            .select('id')
+            .eq('school_id', schoolId);
+
+        if (classError) {
+            console.error('getUsers - Error fetching classes:', classError.message);
+            return res.status(500).json({ error: classError.message });
+        }
+
+        const classIds = (schoolClasses || []).map(c => c.id);
+        console.log('getUsers - Found classIds:', classIds.length);
+
+        if (classIds.length === 0) {
+            // No classes, return empty array
+            console.log('getUsers - No classes found, returning empty array');
+            return res.status(200).json([]);
+        }
+
+        // Query users in those classes
         let query = supabase
             .from('users')
-            .select(`
-                *,
-                classes!inner (
-                    class_name,
-                    school_id
-                )
-            `)
-            .eq('classes.school_id', schoolId);
+            .select('*, classes(class_name)')
+            .in('class_id', classIds);
 
         if (class_id) {
             query = query.eq('class_id', class_id);
@@ -449,8 +466,11 @@ exports.getUsers = async (req, res) => {
         const { data: users, error } = await query.order('created_at', { ascending: false });
 
         if (error) {
+            console.error('getUsers - Supabase error:', error.message);
             return res.status(500).json({ error: error.message });
         }
+
+        console.log('getUsers - Found users:', (users || []).length);
 
         // Transform to match expected format
         const transformedUsers = (users || []).map(user => ({
@@ -461,9 +481,11 @@ exports.getUsers = async (req, res) => {
 
         res.status(200).json(transformedUsers);
     } catch (err) {
+        console.error('getUsers - Catch error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
+
 
 // Update user/student
 exports.updateUser = async (req, res) => {
