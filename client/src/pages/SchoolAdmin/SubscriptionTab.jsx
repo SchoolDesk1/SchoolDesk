@@ -88,6 +88,27 @@ const PLANS = {
 
 const API_URL = '/api';
 
+// Safe JSON parsing helper to prevent crashes
+const safeJsonParse = async (response, context = 'API') => {
+    if (!response.ok) {
+        console.error(`${context} Error: HTTP ${response.status}`);
+        return { error: true, message: `Server error (${response.status})` };
+    }
+
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+        console.error(`${context} Error: Empty response body`);
+        return { error: true, message: 'Empty response from server' };
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (parseError) {
+        console.error(`${context} JSON Parse Error:`, parseError, 'Response:', text.substring(0, 200));
+        return { error: true, message: 'Invalid response from server' };
+    }
+};
+
 const SubscriptionTab = ({ user, token }) => {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [promoCode, setPromoCode] = useState('');
@@ -143,14 +164,21 @@ const SubscriptionTab = ({ user, token }) => {
                 }
             });
 
-            const data = await response.json();
+            const data = await safeJsonParse(response, 'verifyPayment');
+
+            if (data.error) {
+                setPaymentStatus({
+                    type: 'error',
+                    message: data.message || 'Failed to verify payment.'
+                });
+                return;
+            }
 
             if (data.success && data.status === 'PAID') {
                 setPaymentStatus({
                     type: 'success',
                     message: `Payment successful! You are now on ${data.planName}. Refreshing...`
                 });
-                // Reload page to update user data
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
@@ -159,7 +187,6 @@ const SubscriptionTab = ({ user, token }) => {
                     type: 'pending',
                     message: 'Payment is being processed. Please wait...'
                 });
-                // Retry verification after 3 seconds
                 setTimeout(() => verifyPayment(orderId), 3000);
             } else {
                 setPaymentStatus({
@@ -168,6 +195,7 @@ const SubscriptionTab = ({ user, token }) => {
                 });
             }
         } catch (err) {
+            console.error('verifyPayment error:', err);
             setPaymentStatus({
                 type: 'error',
                 message: 'Failed to verify payment. Please contact support.'
@@ -193,9 +221,14 @@ const SubscriptionTab = ({ user, token }) => {
                 })
             });
 
-            const data = await response.json();
-            setPromoResult(data);
+            const data = await safeJsonParse(response, 'validatePromoCode');
+            if (data.error) {
+                setPromoResult({ success: false, message: data.message || 'Failed to validate promo code' });
+            } else {
+                setPromoResult(data);
+            }
         } catch (err) {
+            console.error('validatePromoCode error:', err);
             setPromoResult({ success: false, message: 'Failed to validate promo code' });
         }
     };
@@ -220,28 +253,27 @@ const SubscriptionTab = ({ user, token }) => {
                 })
             });
 
-            const data = await response.json();
+            const data = await safeJsonParse(response, 'initiatePayment');
 
-            if (!data.success) {
+            if (data.error || !data.success) {
                 throw new Error(data.message || 'Failed to create payment order');
             }
 
             // Initialize Cashfree checkout
             const cashfree = window.Cashfree({
-                mode: 'production' // Using production mode with production credentials
+                mode: 'production'
             });
 
             // Open checkout
             const checkoutOptions = {
                 paymentSessionId: data.paymentSessionId,
-                redirectTarget: '_modal' // Opens in popup
+                redirectTarget: '_modal'
             };
 
             cashfree.checkout(checkoutOptions).then((result) => {
                 if (result.error) {
                     setError(result.error.message || 'Payment failed');
                 } else if (result.paymentDetails) {
-                    // Payment completed, verify on backend
                     verifyPayment(data.orderId);
                 }
             }).catch((err) => {
@@ -249,6 +281,7 @@ const SubscriptionTab = ({ user, token }) => {
             });
 
         } catch (err) {
+            console.error('initiatePayment error:', err);
             setError(err.message || 'Failed to initiate payment');
         } finally {
             setIsProcessing(false);
