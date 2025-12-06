@@ -7,15 +7,17 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
-    const logout = () => {
+    const logout = (navigate = null) => {
         setUser(null);
         setToken(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.clear(); // Clear all localStorage
 
-        // Force navigation to login and prevent back button
-        window.location.replace('/login');
+        // Use React Router navigation if provided, otherwise do a soft navigate
+        if (navigate) {
+            navigate('/login', { replace: true });
+        }
     };
 
     const refreshUser = async () => {

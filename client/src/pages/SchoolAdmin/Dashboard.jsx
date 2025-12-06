@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
 import SubscriptionTab from './SubscriptionTab';
@@ -6,6 +7,7 @@ import VehiclesTab from './VehiclesTab';
 import EventsTab from './EventsTab';
 
 const SchoolAdminDashboard = () => {
+    const navigate = useNavigate();
     const { user, token, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('students');
     const [classes, setClasses] = useState([]);
@@ -589,7 +591,7 @@ const SchoolAdminDashboard = () => {
                             {tab.label}
                         </button>
                     ))}
-                    <button onClick={logout} className="w-full text-left py-3 px-4 hover:bg-red-600 rounded-lg mt-8 transition-all duration-300">
+                    <button onClick={() => logout(navigate)} className="w-full text-left py-3 px-4 hover:bg-red-600 rounded-lg mt-8 transition-all duration-300">
                         🚪 Logout
                     </button>
                 </nav>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
@@ -7,6 +8,7 @@ import PromoCodesTab from './PromoCodesTab';
 import PayoutsTab from './PayoutsTab';
 
 const SuperAdminDashboard = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [schools, setSchools] = useState([]);
     const [analytics, setAnalytics] = useState({});
@@ -22,6 +24,8 @@ const SuperAdminDashboard = () => {
     const [showModal, setShowModal] = useState(null);
     const [formData, setFormData] = useState({});
     const { token, logout } = useAuth();
+
+    const handleLogout = () => logout(navigate);
 
     const API_URL = '/api/admin';
 
@@ -314,7 +318,7 @@ const SuperAdminDashboard = () => {
                     </div>
 
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-300/30 text-white rounded-lg transition-all"
                     >
                         Logout
