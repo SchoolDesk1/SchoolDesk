@@ -1,4 +1,4 @@
-const db = require('../database');
+const supabase = require('../supabase');
 const bcrypt = require('bcryptjs');
 
 // Helper to generate random password
@@ -8,7 +8,7 @@ const generatePassword = () => {
 
 // --- Classes ---
 
-exports.createClass = (req, res) => {
+exports.createClass = async (req, res) => {
     const { class_name } = req.body;
     const schoolId = req.schoolId;
 
@@ -19,31 +19,54 @@ exports.createClass = (req, res) => {
     // Auto-generate password: C{SchoolID}{Random}
     const class_password = `C${schoolId}${generatePassword()}`;
 
-    db.run('INSERT INTO classes (school_id, class_name, class_password) VALUES (?, ?, ?)',
-        [schoolId, class_name, class_password],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({
-                message: 'Class created successfully',
-                id: this.lastID,
+    try {
+        const { data, error } = await supabase
+            .from('classes')
+            .insert({
+                school_id: schoolId,
+                class_name,
                 class_password
-            });
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({
+            message: 'Class created successfully',
+            id: data.id,
+            class_password
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-exports.getClasses = (req, res) => {
+exports.getClasses = async (req, res) => {
     const schoolId = req.schoolId;
-    db.all('SELECT * FROM classes WHERE school_id = ?', [schoolId], (err, classes) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(classes);
-    });
+
+    try {
+        const { data: classes, error } = await supabase
+            .from('classes')
+            .select('*')
+            .eq('school_id', schoolId);
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.status(200).json(classes || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // --- Notices ---
 
 // Create Notice
-exports.createNotice = (req, res) => {
+exports.createNotice = async (req, res) => {
     const { notice_text, class_id, file_url, duration } = req.body;
     const schoolId = req.schoolId;
 
@@ -56,84 +79,145 @@ exports.createNotice = (req, res) => {
     if (duration) {
         const date = new Date();
         date.setDate(date.getDate() + parseInt(duration));
-        expiryDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        expiryDate = date.toISOString().split('T')[0];
     }
 
-    db.run('INSERT INTO notices (school_id, class_id, notice_text, file_url, expiry_date) VALUES (?, ?, ?, ?, ?)',
-        [schoolId, class_id || null, notice_text, file_url, expiryDate],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Notice created successfully', id: this.lastID });
+    try {
+        const { data, error } = await supabase
+            .from('notices')
+            .insert({
+                school_id: schoolId,
+                class_id: class_id || null,
+                notice_text,
+                file_url,
+                expiry_date: expiryDate
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Notice created successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Notices (filter out expired ones)
-exports.getNotices = (req, res) => {
+exports.getNotices = async (req, res) => {
     const schoolId = req.schoolId;
     const today = new Date().toISOString().split('T')[0];
 
     console.log('getNotices called - schoolId:', schoolId, 'today:', today);
 
-    // Only show notices that haven't expired
-    db.all('SELECT * FROM notices WHERE school_id = ? AND (expiry_date IS NULL OR expiry_date >= ?) ORDER BY created_at DESC',
-        [schoolId, today],
-        (err, notices) => {
-            if (err) {
-                console.error('getNotices error:', err.message);
-                return res.status(500).json({ error: err.message });
-            }
-            console.log('getNotices success - found', notices.length, 'notices');
-            res.status(200).json(notices);
+    try {
+        const { data: notices, error } = await supabase
+            .from('notices')
+            .select('*')
+            .eq('school_id', schoolId)
+            .or(`expiry_date.is.null,expiry_date.gte.${today}`)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('getNotices error:', error.message);
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        console.log('getNotices success - found', notices?.length || 0, 'notices');
+        res.status(200).json(notices || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Notice
-exports.deleteNotice = (req, res) => {
+exports.deleteNotice = async (req, res) => {
     const { id } = req.params;
     const schoolId = req.schoolId;
 
-    // Ensure notice belongs to this school before deleting
-    db.run('DELETE FROM notices WHERE id = ? AND school_id = ?', [id, schoolId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Notice not found or unauthorized' });
+    try {
+        const { data, error } = await supabase
+            .from('notices')
+            .delete()
+            .eq('id', id)
+            .eq('school_id', schoolId)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Notice not found or unauthorized' });
+        }
+
         res.status(200).json({ message: 'Notice deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // --- Fees ---
 
 // Add fee record for a parent (User)
-exports.addFee = (req, res) => {
+exports.addFee = async (req, res) => {
     const { parent_id, month, amount } = req.body;
 
     if (!parent_id || !month) {
         return res.status(400).json({ message: 'Parent ID and Month are required.' });
     }
 
-    db.run('INSERT INTO fees (parent_id, month, amount, status) VALUES (?, ?, ?, ?)',
-        [parent_id, month, amount || 0, 'UNPAID'],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Fee record added', id: this.lastID });
+    try {
+        const { data, error } = await supabase
+            .from('fees')
+            .insert({
+                parent_id,
+                month,
+                amount: amount || 0,
+                status: 'UNPAID'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Fee record added', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-exports.updateFeeStatus = (req, res) => {
+exports.updateFeeStatus = async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; // 'PAID' or 'UNPAID'
+    const { status } = req.body;
 
-    db.run('UPDATE fees SET status = ? WHERE id = ?', [status, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Fee record not found' });
+    try {
+        const { data, error } = await supabase
+            .from('fees')
+            .update({ status })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Fee record not found' });
+        }
+
         res.status(200).json({ message: 'Fee status updated' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Toggle fee status for a student-month-year combination
-exports.toggleFeeStatus = (req, res) => {
+exports.toggleFeeStatus = async (req, res) => {
     const { student_id, month, year } = req.body;
 
     if (!student_id || !month) {
@@ -142,69 +226,140 @@ exports.toggleFeeStatus = (req, res) => {
 
     const feeYear = year || new Date().getFullYear();
 
-    // First check if a fee record exists
-    db.get('SELECT * FROM fees WHERE parent_id = ? AND month = ? AND year = ?', [student_id, month, feeYear], (err, fee) => {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        // First check if a fee record exists
+        const { data: fee, error: fetchError } = await supabase
+            .from('fees')
+            .select('*')
+            .eq('parent_id', student_id)
+            .eq('month', month)
+            .eq('year', feeYear)
+            .single();
 
         if (fee) {
             // Toggle existing record
             const newStatus = fee.status === 'PAID' ? 'UNPAID' : 'PAID';
-            db.run('UPDATE fees SET status = ? WHERE id = ?', [newStatus, fee.id], function (err) {
-                if (err) return res.status(500).json({ error: err.message });
-                res.status(200).json({ message: 'Fee status updated', status: newStatus });
-            });
+            const { error: updateError } = await supabase
+                .from('fees')
+                .update({ status: newStatus })
+                .eq('id', fee.id);
+
+            if (updateError) {
+                return res.status(500).json({ error: updateError.message });
+            }
+
+            res.status(200).json({ message: 'Fee status updated', status: newStatus });
         } else {
             // Create new record as PAID
-            db.run('INSERT INTO fees (parent_id, month, year, amount, status) VALUES (?, ?, ?, ?, ?)',
-                [student_id, month, feeYear, 0, 'PAID'],
-                function (err) {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.status(201).json({ message: 'Fee record created', status: 'PAID', id: this.lastID });
-                }
-            );
+            const { data: newFee, error: insertError } = await supabase
+                .from('fees')
+                .insert({
+                    parent_id: student_id,
+                    month,
+                    year: feeYear,
+                    amount: 0,
+                    status: 'PAID'
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                return res.status(500).json({ error: insertError.message });
+            }
+
+            res.status(201).json({ message: 'Fee record created', status: 'PAID', id: newFee.id });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-exports.getFees = (req, res) => {
-    // Get all fees for students in this school
-    // Complex query joining users and classes
+exports.getFees = async (req, res) => {
     const schoolId = req.schoolId;
-    const sql = `
-    SELECT f.*, u.phone, c.class_name 
-    FROM fees f
-    JOIN users u ON f.parent_id = u.id
-    JOIN classes c ON u.class_id = c.id
-    WHERE c.school_id = ?
-    ORDER BY f.created_at DESC
-  `;
 
-    db.all(sql, [schoolId], (err, fees) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(fees);
-    });
+    try {
+        // Get all fees for students in this school using Supabase joins
+        const { data: fees, error } = await supabase
+            .from('fees')
+            .select(`
+                *,
+                users!inner (
+                    phone,
+                    class_id,
+                    classes!inner (
+                        class_name,
+                        school_id
+                    )
+                )
+            `)
+            .eq('users.classes.school_id', schoolId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            // Fallback to simpler query if join fails
+            const { data: simpleFees, error: simpleError } = await supabase
+                .from('fees')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (simpleError) {
+                return res.status(500).json({ error: simpleError.message });
+            }
+            return res.status(200).json(simpleFees || []);
+        }
+
+        // Transform joined data to match expected format
+        const transformedFees = (fees || []).map(fee => ({
+            ...fee,
+            phone: fee.users?.phone,
+            class_name: fee.users?.classes?.class_name,
+            users: undefined
+        }));
+
+        res.status(200).json(transformedFees);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // --- Homework (View Only) ---
-exports.getAllHomework = (req, res) => {
+exports.getAllHomework = async (req, res) => {
     const schoolId = req.schoolId;
-    const sql = `
-    SELECT h.*, c.class_name 
-    FROM homework h
-    JOIN classes c ON h.class_id = c.id
-    WHERE c.school_id = ?
-    ORDER BY h.created_at DESC
-  `;
-    db.all(sql, [schoolId], (err, homework) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(homework);
-    });
+
+    try {
+        const { data: homework, error } = await supabase
+            .from('homework')
+            .select(`
+                *,
+                classes!inner (
+                    class_name,
+                    school_id
+                )
+            `)
+            .eq('classes.school_id', schoolId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Transform to match expected format
+        const transformedHomework = (homework || []).map(hw => ({
+            ...hw,
+            class_name: hw.classes?.class_name,
+            classes: undefined
+        }));
+
+        res.status(200).json(transformedHomework);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // --- Users (Teachers/Parents) ---
 
 // Create User (Parent/Teacher)
-exports.createUser = (req, res) => {
+exports.createUser = async (req, res) => {
     const { name, phone, contact_phone, address, role, class_id, feeAmount, father_name, password } = req.body;
     const schoolId = req.schoolId;
 
@@ -216,102 +371,165 @@ exports.createUser = (req, res) => {
     const userPassword = password || Math.random().toString(36).slice(-8).toUpperCase();
     const hashedPassword = bcrypt.hashSync(userPassword, 8);
 
-    const sql = `INSERT INTO users (name, phone, contact_phone, address, role, class_id, school_id, father_name, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    try {
+        const { data: newUser, error } = await supabase
+            .from('users')
+            .insert({
+                name: name || null,
+                phone,
+                contact_phone: contact_phone || null,
+                address: address || null,
+                role,
+                class_id: class_id || null,
+                school_id: schoolId,
+                father_name: father_name || null,
+                password_hash: hashedPassword
+            })
+            .select()
+            .single();
 
-    db.run(sql, [name || null, phone, contact_phone || null, address || null, role, class_id || null, schoolId, father_name || null, hashedPassword], function (err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
 
-        const userId = this.lastID;
+        const userId = newUser.id;
 
         // If feeAmount is provided, create a PAID fee record for the current month
         if (feeAmount && role === 'parent') {
             const currentMonth = new Date().toLocaleString('default', { month: 'short' });
             const currentYear = new Date().getFullYear();
-            db.run('INSERT INTO fees (parent_id, month, year, amount, status, dismissed) VALUES (?, ?, ?, ?, ?, ?)',
-                [userId, currentMonth, currentYear, feeAmount, 'PAID', 1],
-                (feeErr) => {
-                    if (feeErr) console.error('Error creating initial fee:', feeErr);
-                }
-            );
+
+            await supabase
+                .from('fees')
+                .insert({
+                    parent_id: userId,
+                    month: currentMonth,
+                    year: currentYear,
+                    amount: feeAmount,
+                    status: 'PAID',
+                    dismissed: 1
+                });
         }
 
         res.status(201).json({
             message: 'User created successfully',
             id: userId,
-            password: userPassword // Return password so admin can share it
+            password: userPassword
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Users with optional filters
-exports.getUsers = (req, res) => {
+exports.getUsers = async (req, res) => {
     const schoolId = req.schoolId;
-    const { class_id, role } = req.query; // Optional class and role filters
+    const { class_id, role } = req.query;
 
-    let sql = `
-    SELECT u.*, c.class_name 
-    FROM users u
-    JOIN classes c ON u.class_id = c.id
-    WHERE c.school_id = ?`;
+    try {
+        let query = supabase
+            .from('users')
+            .select(`
+                *,
+                classes!inner (
+                    class_name,
+                    school_id
+                )
+            `)
+            .eq('classes.school_id', schoolId);
 
-    const params = [schoolId];
+        if (class_id) {
+            query = query.eq('class_id', class_id);
+        }
 
-    // Add class filter if provided
-    if (class_id) {
-        sql += ` AND u.class_id = ?`;
-        params.push(class_id);
+        if (role) {
+            query = query.eq('role', role);
+        }
+
+        const { data: users, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Transform to match expected format
+        const transformedUsers = (users || []).map(user => ({
+            ...user,
+            class_name: user.classes?.class_name,
+            classes: undefined
+        }));
+
+        res.status(200).json(transformedUsers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // Add role filter if provided
-    if (role) {
-        sql += ` AND u.role = ?`;
-        params.push(role);
-    }
-
-    sql += ` ORDER BY u.created_at DESC`;
-
-    db.all(sql, params, (err, users) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(users);
-    });
 };
 
 // Update user/student
-exports.updateUser = (req, res) => {
+exports.updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, phone, contact_phone, address, class_id, father_name } = req.body;
 
-    db.run('UPDATE users SET name = ?, phone = ?, contact_phone = ?, address = ?, class_id = ?, father_name = ? WHERE id = ?',
-        [name, phone, contact_phone, address, class_id, father_name, id],
-        function (err) {
-            if (err) {
-                console.error('Update user error:', err);
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(400).json({ message: 'Phone number already exists.' });
-                }
-                return res.status(500).json({ error: err.message });
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({
+                name,
+                phone,
+                contact_phone,
+                address,
+                class_id,
+                father_name
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('Update user error:', error);
+            if (error.message.includes('unique') || error.code === '23505') {
+                return res.status(400).json({ message: 'Phone number already exists.' });
             }
-            if (this.changes === 0) return res.status(404).json({ message: 'User not found' });
-            res.status(200).json({ message: 'User updated successfully' });
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'User updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete user/student
-exports.deleteUser = (req, res) => {
+exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
-    // First delete associated fees
-    db.run('DELETE FROM fees WHERE parent_id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        // First delete associated fees
+        await supabase
+            .from('fees')
+            .delete()
+            .eq('parent_id', id);
 
         // Then delete the user
-        db.run('DELETE FROM users WHERE id = ?', [id], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'User not found' });
-            res.status(200).json({ message: 'User deleted successfully' });
-        });
-    });
+        const { data, error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };

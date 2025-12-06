@@ -1,42 +1,40 @@
 // Partner Controller
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../database');
+const supabase = require('../supabase');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 /**
  * Partner Login
  */
-exports.loginPartner = (req, res) => {
+exports.loginPartner = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    db.get('SELECT * FROM partners WHERE email = ?', [email], async (err, partner) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner, error } = await supabase
+            .from('partners')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-        if (!partner) {
+        if (error || !partner) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Check if partner is active
         if (partner.status !== 'active') {
             return res.status(403).json({ message: 'Account is inactive. Please contact support.' });
         }
 
-        // Verify password
         const isMatch = await bcrypt.compare(password, partner.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Generate JWT token
         const token = jwt.sign(
             {
                 id: partner.id,
@@ -60,22 +58,26 @@ exports.loginPartner = (req, res) => {
                 status: partner.status
             }
         });
-    });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Get Partner Profile
  */
-exports.getPartnerProfile = (req, res) => {
+exports.getPartnerProfile = async (req, res) => {
     const partnerId = req.partnerId;
 
-    db.get('SELECT * FROM partners WHERE id = ?', [partnerId], (err, partner) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner, error } = await supabase
+            .from('partners')
+            .select('*')
+            .eq('id', partnerId)
+            .single();
 
-        if (!partner) {
+        if (error || !partner) {
             return res.status(404).json({ message: 'Partner not found' });
         }
 
@@ -89,13 +91,15 @@ exports.getPartnerProfile = (req, res) => {
             status: partner.status,
             createdAt: partner.created_at
         });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Update Partner Profile
  */
-exports.updatePartnerProfile = (req, res) => {
+exports.updatePartnerProfile = async (req, res) => {
     const partnerId = req.partnerId;
     const { name, phone } = req.body;
 
@@ -103,22 +107,20 @@ exports.updatePartnerProfile = (req, res) => {
         return res.status(400).json({ message: 'Name and phone are required' });
     }
 
-    db.run(
-        'UPDATE partners SET name = ?, phone = ? WHERE id = ?',
-        [name, phone, partnerId],
-        function (err) {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ message: 'Server error' });
-            }
+    try {
+        const { data, error } = await supabase
+            .from('partners')
+            .update({ name, phone })
+            .eq('id', partnerId)
+            .select();
 
-            if (this.changes === 0) {
-                return res.status(404).json({ message: 'Partner not found' });
-            }
+        if (error) return res.status(500).json({ message: 'Server error' });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Partner not found' });
 
-            res.json({ message: 'Profile updated successfully' });
-        }
-    );
+        res.json({ message: 'Profile updated successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
@@ -136,138 +138,124 @@ exports.changePartnerPassword = async (req, res) => {
         return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    db.get('SELECT password_hash FROM partners WHERE id = ?', [partnerId], async (err, partner) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner, error } = await supabase
+            .from('partners')
+            .select('password_hash')
+            .eq('id', partnerId)
+            .single();
 
-        if (!partner) {
+        if (error || !partner) {
             return res.status(404).json({ message: 'Partner not found' });
         }
 
-        // Verify current password
         const isMatch = await bcrypt.compare(currentPassword, partner.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Current password is incorrect' });
         }
 
-        // Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        db.run(
-            'UPDATE partners SET password_hash = ? WHERE id = ?',
-            [hashedPassword, partnerId],
-            function (err) {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ message: 'Server error' });
-                }
+        await supabase
+            .from('partners')
+            .update({ password_hash: hashedPassword })
+            .eq('id', partnerId);
 
-                res.json({ message: 'Password changed successfully' });
-            }
-        );
-    });
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Get Partner Dashboard Stats
  */
-exports.getPartnerDashboard = (req, res) => {
+exports.getPartnerDashboard = async (req, res) => {
     const partnerId = req.partnerId;
 
-    // Get partner code first
-    db.get('SELECT unique_code, name FROM partners WHERE id = ?', [partnerId], (err, partner) => {
-        if (err || !partner) {
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner } = await supabase
+            .from('partners')
+            .select('unique_code, name')
+            .eq('id', partnerId)
+            .single();
 
-        const partnerCode = partner.unique_code;
+        if (!partner) return res.status(500).json({ message: 'Server error' });
 
-        // Get stats
-        db.all(
-            `SELECT 
-        COUNT(*) as totalSchools,
-        SUM(revenue) as totalRevenue,
-        SUM(commission) as totalCommission
-       FROM partner_schools 
-       WHERE partner_code = ?`,
-            [partnerCode],
-            (err, stats) => {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ message: 'Server error' });
-                }
+        const { data: schoolData } = await supabase
+            .from('partner_schools')
+            .select('revenue, commission')
+            .eq('partner_code', partner.unique_code);
 
-                const result = stats[0] || { totalSchools: 0, totalRevenue: 0, totalCommission: 0 };
+        const totalSchools = schoolData?.length || 0;
+        const totalRevenue = schoolData?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
+        const totalCommission = schoolData?.reduce((sum, s) => sum + (s.commission || 0), 0) || 0;
 
-                // Get total payouts (completed and pending)
-                db.get(
-                    `SELECT SUM(amount) as totalPayouts FROM payout_requests WHERE partner_id = ? AND status != 'rejected'`,
-                    [partnerId],
-                    (err, payoutStats) => {
-                        const totalPayouts = payoutStats?.totalPayouts || 0;
-                        const pendingCommission = (result.totalCommission || 0) - totalPayouts;
+        const { data: payoutData } = await supabase
+            .from('payout_requests')
+            .select('amount')
+            .eq('partner_id', partnerId)
+            .neq('status', 'rejected');
 
-                        res.json({
-                            partnerCode: partnerCode,
-                            totalSchools: result.totalSchools || 0,
-                            totalRevenue: result.totalRevenue || 0,
-                            totalCommission: result.totalCommission || 0,
-                            pendingCommission: Math.max(0, pendingCommission)
-                        });
-                    }
-                );
-            }
-        );
-    });
+        const totalPayouts = payoutData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        const pendingCommission = Math.max(0, totalCommission - totalPayouts);
+
+        res.json({
+            partnerCode: partner.unique_code,
+            totalSchools,
+            totalRevenue,
+            totalCommission,
+            pendingCommission
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Get Partner's Schools List
  */
-exports.getPartnerSchools = (req, res) => {
+exports.getPartnerSchools = async (req, res) => {
     const partnerId = req.partnerId;
 
-    // Get partner code first
-    db.get('SELECT unique_code FROM partners WHERE id = ?', [partnerId], (err, partner) => {
-        if (err || !partner) {
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner } = await supabase
+            .from('partners')
+            .select('unique_code')
+            .eq('id', partnerId)
+            .single();
 
-        const partnerCode = partner.unique_code;
+        if (!partner) return res.status(500).json({ message: 'Server error' });
 
-        db.all(
-            `SELECT 
-        s.id,
-        s.school_name,
-        s.email,
-        s.plan_type,
-        s.status,
-        s.created_at,
-        ps.revenue,
-        ps.commission
-       FROM partner_schools ps
-       JOIN schools s ON ps.school_id = s.id
-       WHERE ps.partner_code = ?
-       ORDER BY ps.created_at DESC`,
-            [partnerCode],
-            (err, schools) => {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ message: 'Server error' });
-                }
+        const { data: schools, error } = await supabase
+            .from('partner_schools')
+            .select('*, schools (id, school_name, email, plan_type, status, created_at)')
+            .eq('partner_code', partner.unique_code)
+            .order('created_at', { ascending: false });
 
-                res.json({ schools: schools || [] });
-            }
-        );
-    });
+        if (error) return res.status(500).json({ message: 'Server error' });
+
+        const transformed = (schools || []).map(s => ({
+            id: s.schools?.id,
+            school_name: s.schools?.school_name,
+            email: s.schools?.email,
+            plan_type: s.schools?.plan_type,
+            status: s.schools?.status,
+            created_at: s.schools?.created_at,
+            revenue: s.revenue,
+            commission: s.commission
+        }));
+
+        res.json({ schools: transformed });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Request Payout
  */
-exports.requestPayout = (req, res) => {
+exports.requestPayout = async (req, res) => {
     const partnerId = req.partnerId;
     const { amount, paymentDetails } = req.body;
 
@@ -275,85 +263,97 @@ exports.requestPayout = (req, res) => {
         return res.status(400).json({ message: 'Amount and payment details are required' });
     }
 
-    // 1. Calculate pending commission
-    db.get('SELECT unique_code, name FROM partners WHERE id = ?', [partnerId], (err, partner) => {
-        if (err || !partner) return res.status(500).json({ message: 'Server error' });
+    try {
+        const { data: partner } = await supabase
+            .from('partners')
+            .select('unique_code, name')
+            .eq('id', partnerId)
+            .single();
 
-        db.get(
-            `SELECT SUM(commission) as totalCommission FROM partner_schools WHERE partner_code = ?`,
-            [partner.unique_code],
-            (err, commissionStats) => {
-                if (err) return res.status(500).json({ message: 'Server error' });
+        if (!partner) return res.status(500).json({ message: 'Server error' });
 
-                db.get(
-                    `SELECT SUM(amount) as totalPayouts FROM payout_requests WHERE partner_id = ? AND status != 'rejected'`,
-                    [partnerId],
-                    (err, payoutStats) => {
-                        if (err) return res.status(500).json({ message: 'Server error' });
+        // Calculate commission
+        const { data: schoolData } = await supabase
+            .from('partner_schools')
+            .select('commission')
+            .eq('partner_code', partner.unique_code);
 
-                        const totalCommission = commissionStats?.totalCommission || 0;
-                        const totalPayouts = payoutStats?.totalPayouts || 0;
-                        const availableBalance = totalCommission - totalPayouts;
+        const totalCommission = schoolData?.reduce((sum, s) => sum + (s.commission || 0), 0) || 0;
 
-                        if (amount > availableBalance) {
-                            return res.status(400).json({ message: 'Insufficient balance' });
-                        }
+        // Get total payouts
+        const { data: payoutData } = await supabase
+            .from('payout_requests')
+            .select('amount')
+            .eq('partner_id', partnerId)
+            .neq('status', 'rejected');
 
-                        // 2. Create payout request
-                        db.run(
-                            `INSERT INTO payout_requests (partner_id, amount, payment_details, status) VALUES (?, ?, ?, 'pending')`,
-                            [partnerId, amount, paymentDetails],
-                            function (err) {
-                                if (err) return res.status(500).json({ message: 'Server error' });
+        const totalPayouts = payoutData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        const availableBalance = totalCommission - totalPayouts;
 
-                                // 3. Create notification for Super Admin
-                                const notificationTitle = 'New Payout Request';
-                                const notificationMessage = `Partner ${partner.name} requested a payout of ₹${amount}`;
+        if (amount > availableBalance) {
+            return res.status(400).json({ message: 'Insufficient balance' });
+        }
 
-                                db.run(
-                                    `INSERT INTO notifications (recipient_type, title, message, type) VALUES ('super_admin', ?, ?, 'payout_request')`,
-                                    [notificationTitle, notificationMessage],
-                                    (err) => {
-                                        if (err) console.error('Error creating notification:', err);
-                                    }
-                                );
+        // Create payout request
+        await supabase
+            .from('payout_requests')
+            .insert({
+                partner_id: partnerId,
+                amount,
+                payment_details: paymentDetails,
+                status: 'pending'
+            });
 
-                                res.status(201).json({ message: 'Payout request submitted successfully' });
-                            }
-                        );
-                    }
-                );
-            }
-        );
-    });
+        // Create notification
+        await supabase
+            .from('notifications')
+            .insert({
+                recipient_type: 'super_admin',
+                title: 'New Payout Request',
+                message: `Partner ${partner.name} requested a payout of ₹${amount}`,
+                type: 'payout_request'
+            });
+
+        res.status(201).json({ message: 'Payout request submitted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
  * Get Payout History
  */
-exports.getPayouts = (req, res) => {
+exports.getPayouts = async (req, res) => {
     const partnerId = req.partnerId;
 
-    db.all(
-        `SELECT * FROM payout_requests WHERE partner_id = ? ORDER BY created_at DESC`,
-        [partnerId],
-        (err, payouts) => {
-            if (err) return res.status(500).json({ message: 'Server error' });
-            res.json({ payouts: payouts || [] });
-        }
-    );
+    try {
+        const { data: payouts, error } = await supabase
+            .from('payout_requests')
+            .select('*')
+            .eq('partner_id', partnerId)
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ message: 'Server error' });
+        res.json({ payouts: payouts || [] });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 /**
- * Get Referral Link (Deprecated but kept for backward compatibility)
+ * Get Referral Link
  */
-exports.getReferralLink = (req, res) => {
+exports.getReferralLink = async (req, res) => {
     const partnerId = req.partnerId;
 
-    db.get('SELECT unique_code FROM partners WHERE id = ?', [partnerId], (err, partner) => {
-        if (err || !partner) {
-            return res.status(500).json({ message: 'Server error' });
-        }
+    try {
+        const { data: partner } = await supabase
+            .from('partners')
+            .select('unique_code')
+            .eq('id', partnerId)
+            .single();
+
+        if (!partner) return res.status(500).json({ message: 'Server error' });
 
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const referralLink = `${baseUrl}/signup?ref=${partner.unique_code}`;
@@ -362,7 +362,9 @@ exports.getReferralLink = (req, res) => {
             partnerCode: partner.unique_code,
             referralLink: referralLink
         });
-    });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 module.exports = exports;

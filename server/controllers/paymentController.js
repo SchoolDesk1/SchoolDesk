@@ -1,5 +1,5 @@
 const { Cashfree } = require('cashfree-pg');
-const db = require('../database');
+const supabase = require('../supabase');
 const crypto = require('crypto');
 
 // Plan configuration with actual pricing
@@ -29,7 +29,6 @@ const PLANS = {
 
 // Initialize Cashfree SDK
 const initCashfree = () => {
-    // Check if credentials are configured
     if (!process.env.CASHFREE_APP_ID || !process.env.CASHFREE_SECRET_KEY) {
         console.error('Cashfree credentials not configured in .env file');
         console.error('Required: CASHFREE_APP_ID and CASHFREE_SECRET_KEY');
@@ -49,40 +48,28 @@ const initCashfree = () => {
     return Cashfree;
 };
 
-// Helper to promisify database operations
-const dbRun = (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
-            if (err) reject(err);
-            else resolve({ lastID: this.lastID, changes: this.changes });
-        });
-    });
-};
-
-const dbGet = (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-        db.get(sql, params, (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-        });
-    });
-};
-
 // Validate promo code and calculate discount
 const validatePromoCode = async (promoCode, planId) => {
     if (!promoCode) return { valid: false, discount: 0 };
 
     try {
-        const promo = await dbGet(
-            `SELECT * FROM promo_codes 
-             WHERE code = ? 
-             AND status = 'active' 
-             AND date('now') BETWEEN valid_from AND valid_to
-             AND (usage_limit IS NULL OR current_usage < usage_limit)`,
-            [promoCode.toUpperCase()]
-        );
+        const { data: promo, error } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', promoCode.toUpperCase())
+            .eq('status', 'active')
+            .lte('valid_from', new Date().toISOString().split('T')[0])
+            .gte('valid_to', new Date().toISOString().split('T')[0])
+            .single();
 
-        if (!promo) return { valid: false, discount: 0, message: 'Invalid or expired promo code' };
+        if (error || !promo) {
+            return { valid: false, discount: 0, message: 'Invalid or expired promo code' };
+        }
+
+        // Check usage limit
+        if (promo.usage_limit && promo.current_usage >= promo.usage_limit) {
+            return { valid: false, discount: 0, message: 'Promo code usage limit exceeded' };
+        }
 
         // Check if plan is applicable
         const applicablePlans = promo.applicable_plans.split(',').map(p => p.trim().toLowerCase());
@@ -113,7 +100,6 @@ const validatePromoCode = async (promoCode, planId) => {
 
 /**
  * Create a new payment order
- * POST /api/payment/create-order
  */
 exports.createOrder = async (req, res) => {
     try {
@@ -131,8 +117,13 @@ exports.createOrder = async (req, res) => {
         }
 
         // Get school details
-        const school = await dbGet('SELECT * FROM schools WHERE id = ?', [schoolId]);
-        if (!school) {
+        const { data: school, error: schoolError } = await supabase
+            .from('schools')
+            .select('*')
+            .eq('id', schoolId)
+            .single();
+
+        if (schoolError || !school) {
             return res.status(404).json({
                 success: false,
                 message: 'School not found'
@@ -142,7 +133,7 @@ exports.createOrder = async (req, res) => {
         // Validate promo code
         const promoResult = await validatePromoCode(promoCode, planId);
         const discount = promoResult.valid ? promoResult.discount : 0;
-        const finalAmount = Math.max(plan.price - discount, 1); // Minimum ₹1
+        const finalAmount = Math.max(plan.price - discount, 1);
 
         // Generate unique order ID
         const orderId = `SD_${schoolId}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -180,18 +171,23 @@ exports.createOrder = async (req, res) => {
         }
 
         // Store order in database
-        await dbRun(
-            `INSERT INTO payments (school_id, plan_id, amount, payment_code, cashfree_order_id, status) 
-             VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [schoolId, planId, finalAmount, orderId, orderId]
-        );
+        await supabase
+            .from('payments')
+            .insert({
+                school_id: schoolId,
+                plan_id: planId,
+                amount: finalAmount,
+                payment_code: orderId,
+                cashfree_order_id: orderId,
+                status: 'pending'
+            });
 
         // If promo code was used, increment usage
         if (promoResult.valid && promoResult.promoId) {
-            await dbRun(
-                'UPDATE promo_codes SET current_usage = current_usage + 1 WHERE id = ?',
-                [promoResult.promoId]
-            );
+            await supabase
+                .from('promo_codes')
+                .update({ current_usage: (await supabase.from('promo_codes').select('current_usage').eq('id', promoResult.promoId).single()).data?.current_usage + 1 || 1 })
+                .eq('id', promoResult.promoId);
         }
 
         res.json({
@@ -217,7 +213,6 @@ exports.createOrder = async (req, res) => {
 
 /**
  * Verify payment status
- * GET /api/payment/verify/:orderId
  */
 exports.verifyPayment = async (req, res) => {
     try {
@@ -232,12 +227,14 @@ exports.verifyPayment = async (req, res) => {
         }
 
         // Get payment record from database
-        const payment = await dbGet(
-            'SELECT * FROM payments WHERE payment_code = ? AND school_id = ?',
-            [orderId, schoolId]
-        );
+        const { data: payment, error: paymentError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('payment_code', orderId)
+            .eq('school_id', schoolId)
+            .single();
 
-        if (!payment) {
+        if (paymentError || !payment) {
             return res.status(404).json({
                 success: false,
                 message: 'Payment not found'
@@ -271,7 +268,6 @@ exports.verifyPayment = async (req, res) => {
         const successfulPayment = response.data.find(p => p.payment_status === 'SUCCESS');
 
         if (successfulPayment) {
-            // Get plan details
             const plan = PLANS[payment.plan_id.toLowerCase()];
             if (!plan) {
                 return res.status(400).json({
@@ -286,32 +282,37 @@ exports.verifyPayment = async (req, res) => {
             const expiryDateStr = expiryDate.toISOString().split('T')[0];
 
             // Update payment status
-            await dbRun(
-                `UPDATE payments 
-                 SET status = 'verified', 
-                     transaction_id = ?, 
-                     verified_at = datetime('now') 
-                 WHERE payment_code = ?`,
-                [successfulPayment.cf_payment_id, orderId]
-            );
+            await supabase
+                .from('payments')
+                .update({
+                    status: 'verified',
+                    transaction_id: successfulPayment.cf_payment_id,
+                    verified_at: new Date().toISOString()
+                })
+                .eq('payment_code', orderId);
 
             // Update school plan
-            await dbRun(
-                `UPDATE schools 
-                 SET plan_type = ?, 
-                     plan_expiry_date = ?, 
-                     max_students = ?, 
-                     max_classes = ? 
-                 WHERE id = ?`,
-                [payment.plan_id, expiryDateStr, plan.max_students, plan.max_classes, schoolId]
-            );
+            await supabase
+                .from('schools')
+                .update({
+                    plan_type: payment.plan_id,
+                    plan_expiry_date: expiryDateStr,
+                    max_students: plan.max_students,
+                    max_classes: plan.max_classes
+                })
+                .eq('id', schoolId);
 
             // Log the activity
-            await dbRun(
-                `INSERT INTO activity_logs (actor_type, actor_id, action_type, description, target_type, target_id) 
-                 VALUES ('school_admin', ?, 'PAYMENT', ?, 'payment', ?)`,
-                [schoolId, `Upgraded to ${plan.name} - ₹${payment.amount}`, payment.id]
-            );
+            await supabase
+                .from('activity_logs')
+                .insert({
+                    actor_type: 'school_admin',
+                    actor_id: schoolId,
+                    action_type: 'PAYMENT',
+                    description: `Upgraded to ${plan.name} - ₹${payment.amount}`,
+                    target_type: 'payment',
+                    target_id: payment.id
+                });
 
             return res.json({
                 success: true,
@@ -330,11 +331,10 @@ exports.verifyPayment = async (req, res) => {
         );
 
         if (failedPayment) {
-            // Update payment status
-            await dbRun(
-                `UPDATE payments SET status = 'failed' WHERE payment_code = ?`,
-                [orderId]
-            );
+            await supabase
+                .from('payments')
+                .update({ status: 'failed' })
+                .eq('payment_code', orderId);
 
             return res.json({
                 success: false,
@@ -343,7 +343,6 @@ exports.verifyPayment = async (req, res) => {
             });
         }
 
-        // Payment still pending
         return res.json({
             success: false,
             status: 'PENDING',
@@ -362,7 +361,6 @@ exports.verifyPayment = async (req, res) => {
 
 /**
  * Webhook handler for Cashfree notifications
- * POST /api/payment/webhook
  */
 exports.handleWebhook = async (req, res) => {
     try {
@@ -370,40 +368,43 @@ exports.handleWebhook = async (req, res) => {
 
         console.log('Cashfree Webhook received:', JSON.stringify(webhookData, null, 2));
 
-        // Verify webhook signature (recommended for production)
-        // const signature = req.headers['x-webhook-signature'];
-        // TODO: Add signature verification
-
         if (webhookData.data?.order?.order_id) {
             const orderId = webhookData.data.order.order_id;
             const paymentStatus = webhookData.data.payment?.payment_status;
 
             if (paymentStatus === 'SUCCESS') {
-                // Get payment record
-                const payment = await dbGet(
-                    'SELECT * FROM payments WHERE payment_code = ?',
-                    [orderId]
-                );
+                const { data: payment } = await supabase
+                    .from('payments')
+                    .select('*')
+                    .eq('payment_code', orderId)
+                    .single();
 
                 if (payment && payment.status !== 'verified') {
                     const plan = PLANS[payment.plan_id.toLowerCase()];
 
                     if (plan) {
-                        // Calculate new expiry date
                         const expiryDate = new Date();
                         expiryDate.setDate(expiryDate.getDate() + plan.duration_days);
                         const expiryDateStr = expiryDate.toISOString().split('T')[0];
 
-                        // Update payment and school
-                        await dbRun(
-                            `UPDATE payments SET status = 'verified', transaction_id = ?, verified_at = datetime('now') WHERE payment_code = ?`,
-                            [webhookData.data.payment?.cf_payment_id, orderId]
-                        );
+                        await supabase
+                            .from('payments')
+                            .update({
+                                status: 'verified',
+                                transaction_id: webhookData.data.payment?.cf_payment_id,
+                                verified_at: new Date().toISOString()
+                            })
+                            .eq('payment_code', orderId);
 
-                        await dbRun(
-                            `UPDATE schools SET plan_type = ?, plan_expiry_date = ?, max_students = ?, max_classes = ? WHERE id = ?`,
-                            [payment.plan_id, expiryDateStr, plan.max_students, plan.max_classes, payment.school_id]
-                        );
+                        await supabase
+                            .from('schools')
+                            .update({
+                                plan_type: payment.plan_id,
+                                plan_expiry_date: expiryDateStr,
+                                max_students: plan.max_students,
+                                max_classes: plan.max_classes
+                            })
+                            .eq('id', payment.school_id);
 
                         console.log(`Payment verified via webhook for order: ${orderId}`);
                     }
@@ -411,19 +412,16 @@ exports.handleWebhook = async (req, res) => {
             }
         }
 
-        // Always respond 200 to acknowledge receipt
         res.status(200).json({ received: true });
 
     } catch (error) {
         console.error('Webhook handling error:', error);
-        // Still respond 200 to prevent retries
         res.status(200).json({ received: true, error: 'Processing error' });
     }
 };
 
 /**
  * Get available plans
- * GET /api/payment/plans
  */
 exports.getPlans = (req, res) => {
     const plans = Object.entries(PLANS).map(([id, plan]) => ({
@@ -440,7 +438,6 @@ exports.getPlans = (req, res) => {
 
 /**
  * Validate promo code endpoint
- * POST /api/payment/validate-promo
  */
 exports.validatePromo = async (req, res) => {
     try {

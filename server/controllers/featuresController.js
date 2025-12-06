@@ -1,73 +1,114 @@
-const db = require('../database');
+const supabase = require('../supabase');
 
 // ==================== TIMETABLE MANAGEMENT ====================
 
 // Create or Update Timetable Entry
-exports.saveTimetable = (req, res) => {
+exports.saveTimetable = async (req, res) => {
     const { class_id, day, period_number, subject, timing, teacher_name } = req.body;
 
     if (!class_id || !day || !period_number || !subject || !timing) {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check if entry exists
-    db.get('SELECT * FROM timetables WHERE class_id = ? AND day = ? AND period_number = ?',
-        [class_id, day, period_number],
-        (err, existing) => {
-            if (err) return res.status(500).json({ error: err.message });
+    try {
+        // Check if entry exists
+        const { data: existing, error: fetchError } = await supabase
+            .from('timetables')
+            .select('*')
+            .eq('class_id', class_id)
+            .eq('day', day)
+            .eq('period_number', period_number)
+            .single();
 
-            if (existing) {
-                // Update existing
-                db.run('UPDATE timetables SET subject = ?, timing = ?, teacher_name = ? WHERE id = ?',
-                    [subject, timing, teacher_name, existing.id],
-                    (err) => {
-                        if (err) return res.status(500).json({ error: err.message });
-                        res.status(200).json({ message: 'Timetable updated successfully' });
-                    }
-                );
-            } else {
-                // Create new
-                db.run('INSERT INTO timetables (class_id, day, period_number, subject, timing, teacher_name) VALUES (?, ?, ?, ?, ?, ?)',
-                    [class_id, day, period_number, subject, timing, teacher_name],
-                    function (err) {
-                        if (err) return res.status(500).json({ error: err.message });
-                        res.status(201).json({ message: 'Timetable created successfully', id: this.lastID });
-                    }
-                );
+        if (existing) {
+            // Update existing
+            const { error: updateError } = await supabase
+                .from('timetables')
+                .update({ subject, timing, teacher_name })
+                .eq('id', existing.id);
+
+            if (updateError) {
+                return res.status(500).json({ error: updateError.message });
             }
-        }
-    );
 
+            res.status(200).json({ message: 'Timetable updated successfully' });
+        } else {
+            // Create new
+            const { data, error: insertError } = await supabase
+                .from('timetables')
+                .insert({
+                    class_id,
+                    day,
+                    period_number,
+                    subject,
+                    timing,
+                    teacher_name
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                return res.status(500).json({ error: insertError.message });
+            }
+
+            res.status(201).json({ message: 'Timetable created successfully', id: data.id });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Timetable by Class
-exports.getTimetable = (req, res) => {
+exports.getTimetable = async (req, res) => {
     const { class_id } = req.params;
 
-    db.all('SELECT * FROM timetables WHERE class_id = ? ORDER BY day, period_number',
-        [class_id],
-        (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(200).json(rows);
+    try {
+        const { data: rows, error } = await supabase
+            .from('timetables')
+            .select('*')
+            .eq('class_id', class_id)
+            .order('day', { ascending: true })
+            .order('period_number', { ascending: true });
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(200).json(rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Timetable Entry
-exports.deleteTimetableEntry = (req, res) => {
+exports.deleteTimetableEntry = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM timetables WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Entry not found' });
+    try {
+        const { data, error } = await supabase
+            .from('timetables')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Entry not found' });
+        }
+
         res.status(200).json({ message: 'Timetable entry deleted' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ==================== VEHICLE MANAGEMENT ====================
 
 // Create Vehicle
-exports.createVehicle = (req, res) => {
+exports.createVehicle = async (req, res) => {
     const { vehicle_name, route_details, driver_name, driver_phone, pickup_time, drop_time } = req.body;
     const schoolId = req.schoolId;
 
@@ -75,102 +116,202 @@ exports.createVehicle = (req, res) => {
         return res.status(400).json({ message: 'Vehicle name, route, driver name and phone are required' });
     }
 
-    db.run('INSERT INTO vehicles (school_id, vehicle_name, route_details, driver_name, driver_phone, pickup_time, drop_time) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [schoolId, vehicle_name, route_details, driver_name, driver_phone, pickup_time, drop_time],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Vehicle added successfully', id: this.lastID });
+    try {
+        const { data, error } = await supabase
+            .from('vehicles')
+            .insert({
+                school_id: schoolId,
+                vehicle_name,
+                route_details,
+                driver_name,
+                driver_phone,
+                pickup_time,
+                drop_time
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Vehicle added successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get All Vehicles for School
-exports.getVehicles = (req, res) => {
+exports.getVehicles = async (req, res) => {
     const schoolId = req.schoolId;
 
-    db.all('SELECT * FROM vehicles WHERE school_id = ? ORDER BY vehicle_name', [schoolId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(rows);
-    });
+    try {
+        const { data: rows, error } = await supabase
+            .from('vehicles')
+            .select('*')
+            .eq('school_id', schoolId)
+            .order('vehicle_name', { ascending: true });
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.status(200).json(rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Update Vehicle
-exports.updateVehicle = (req, res) => {
+exports.updateVehicle = async (req, res) => {
     const { id } = req.params;
     const { vehicle_name, route_details, driver_name, driver_phone, pickup_time, drop_time } = req.body;
 
-    db.run('UPDATE vehicles SET vehicle_name = ?, route_details = ?, driver_name = ?, driver_phone = ?, pickup_time = ?, drop_time = ? WHERE id = ?',
-        [vehicle_name, route_details, driver_name, driver_phone, pickup_time, drop_time, id],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'Vehicle not found' });
-            res.status(200).json({ message: 'Vehicle updated successfully' });
+    try {
+        const { data, error } = await supabase
+            .from('vehicles')
+            .update({
+                vehicle_name,
+                route_details,
+                driver_name,
+                driver_phone,
+                pickup_time,
+                drop_time
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Vehicle not found' });
+        }
+
+        res.status(200).json({ message: 'Vehicle updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Vehicle
-exports.deleteVehicle = (req, res) => {
+exports.deleteVehicle = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM vehicles WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Vehicle not found' });
+    try {
+        const { data, error } = await supabase
+            .from('vehicles')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Vehicle not found' });
+        }
+
         res.status(200).json({ message: 'Vehicle deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Assign Student to Vehicle
-exports.assignVehicle = (req, res) => {
+exports.assignVehicle = async (req, res) => {
     const { student_id, vehicle_id } = req.body;
 
-    db.run('UPDATE users SET vehicle_id = ? WHERE id = ?', [vehicle_id, student_id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Student not found' });
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ vehicle_id })
+            .eq('id', student_id)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
         res.status(200).json({ message: 'Vehicle assigned successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ==================== MARKS/PERFORMANCE ====================
 
 // Add Marks
-exports.addMarks = (req, res) => {
+exports.addMarks = async (req, res) => {
     const { student_id, subject, marks, max_marks, test_name, test_date } = req.body;
 
     if (!student_id || !subject || marks === undefined || !max_marks) {
         return res.status(400).json({ message: 'Student, subject, marks and max marks are required' });
     }
 
-    db.run('INSERT INTO marks (student_id, subject, marks, max_marks, test_name, test_date) VALUES (?, ?, ?, ?, ?, ?)',
-        [student_id, subject, marks, max_marks, test_name, test_date],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Marks added successfully', id: this.lastID });
+    try {
+        const { data, error } = await supabase
+            .from('marks')
+            .insert({
+                student_id,
+                subject,
+                marks,
+                max_marks,
+                test_name,
+                test_date
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Marks added successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Student Performance
-exports.getStudentPerformance = (req, res) => {
+exports.getStudentPerformance = async (req, res) => {
     const { student_id } = req.params;
 
-    db.all('SELECT * FROM marks WHERE student_id = ? ORDER BY test_date DESC', [student_id], (err, marks) => {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        const { data: marks, error } = await supabase
+            .from('marks')
+            .select('*')
+            .eq('student_id', student_id)
+            .order('test_date', { ascending: false });
 
-        // Also get homework completion stats
-        db.get('SELECT COUNT(*) as total FROM homework h JOIN classes c ON h.class_id = c.id JOIN users u ON u.class_id = c.id WHERE u.id = ?',
-            [student_id], (err, homework) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.status(200).json({ marks, homework: homework || { total: 0 } });
-            }
-        );
-    });
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Get homework count - simplified query
+        const { count: homeworkCount } = await supabase
+            .from('homework')
+            .select('*', { count: 'exact', head: true });
+
+        res.status(200).json({
+            marks: marks || [],
+            homework: { total: homeworkCount || 0 }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ==================== EVENTS CALENDAR ====================
 
 // Create Event
-exports.createEvent = (req, res) => {
+exports.createEvent = async (req, res) => {
     const { title, event_date, description, category } = req.body;
     const schoolId = req.schoolId;
 
@@ -178,33 +319,73 @@ exports.createEvent = (req, res) => {
         return res.status(400).json({ message: 'Title and date are required' });
     }
 
-    db.run('INSERT INTO events (school_id, title, event_date, description, category) VALUES (?, ?, ?, ?, ?)',
-        [schoolId, title, event_date, description, category],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Event created successfully', id: this.lastID });
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .insert({
+                school_id: schoolId,
+                title,
+                event_date,
+                description,
+                category
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Event created successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get All Events for School
-exports.getEvents = (req, res) => {
+exports.getEvents = async (req, res) => {
     const schoolId = req.schoolId;
 
-    db.all('SELECT * FROM events WHERE school_id = ? ORDER BY event_date', [schoolId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(rows);
-    });
+    try {
+        const { data: rows, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('school_id', schoolId)
+            .order('event_date', { ascending: true });
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.status(200).json(rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Event
-exports.deleteEvent = (req, res) => {
+exports.deleteEvent = async (req, res) => {
     const { id } = req.params;
     const schoolId = req.schoolId;
 
-    db.run('DELETE FROM events WHERE id = ? AND school_id = ?', [id, schoolId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Event not found' });
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .delete()
+            .eq('id', id)
+            .eq('school_id', schoolId)
+            .select();
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
         res.status(200).json({ message: 'Event deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };

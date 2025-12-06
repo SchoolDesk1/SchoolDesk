@@ -1,16 +1,22 @@
-const db = require('../database');
+const supabase = require('../supabase');
 const bcrypt = require('bcryptjs');
 
 // Get All Schools (with basic info)
-exports.getAllSchools = (req, res) => {
-    db.all('SELECT id, school_name, email, address, contact_person, contact_phone, plan_type, status, plan_expiry_date, created_at FROM schools', [], (err, schools) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(schools);
-    });
+exports.getAllSchools = async (req, res) => {
+    try {
+        const { data: schools, error } = await supabase
+            .from('schools')
+            .select('id, school_name, email, address, contact_person, contact_phone, plan_type, status, plan_expiry_date, created_at');
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.status(200).json(schools || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Create a new school (Demo or Manual)
-exports.createSchool = (req, res) => {
+exports.createSchool = async (req, res) => {
     const { school_name, email, password, address, contact_person, contact_phone, plan_type } = req.body;
 
     if (!school_name || !email || !password) {
@@ -19,214 +25,322 @@ exports.createSchool = (req, res) => {
 
     const passwordHash = bcrypt.hashSync(password, 8);
 
-    const sql = `INSERT INTO schools (school_name, email, password_hash, address, contact_person, contact_phone, plan_type) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const params = [school_name, email, passwordHash, address, contact_person, contact_phone, plan_type || 'basic'];
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .insert({
+                school_name,
+                email,
+                password_hash: passwordHash,
+                address,
+                contact_person,
+                contact_phone,
+                plan_type: plan_type || 'basic'
+            })
+            .select()
+            .single();
 
-    db.run(sql, params, function (err) {
-        if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
+        if (error) {
+            if (error.code === '23505') {
                 return res.status(400).json({ message: 'Email already exists.' });
             }
-            return res.status(500).json({ error: err.message });
+            return res.status(500).json({ error: error.message });
         }
-        res.status(201).json({ message: 'School created successfully', id: this.lastID });
-    });
+
+        res.status(201).json({ message: 'School created successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-// Update School Status (Approve/Suspend)
-exports.updateSchoolStatus = (req, res) => {
+// Update School Status
+exports.updateSchoolStatus = async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; // 'active', 'suspended', 'trial', 'expired'
+    const { status } = req.body;
 
     if (!['active', 'suspended', 'trial', 'expired'].includes(status)) {
         return res.status(400).json({ message: 'Invalid status.' });
     }
 
-    db.run('UPDATE schools SET status = ? WHERE id = ?', [status, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'School not found.' });
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .update({ status })
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'School not found.' });
         res.status(200).json({ message: 'School status updated successfully.' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete School
-exports.deleteSchool = (req, res) => {
+exports.deleteSchool = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM schools WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'School not found.' });
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'School not found.' });
         res.status(200).json({ message: 'School deleted successfully.' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ===== ANALYTICS ENDPOINTS =====
 
 // Get Platform-Wide Analytics
-exports.getPlatformAnalytics = (req, res) => {
-    const queries = {
-        totalSchools: 'SELECT COUNT(*) as count FROM schools',
-        activeSchools: 'SELECT COUNT(*) as count FROM schools WHERE status = "active"',
-        totalStudents: 'SELECT COUNT(*) as count FROM users WHERE role = "parent"',
-        totalTeachers: 'SELECT COUNT(*) as count FROM users WHERE role = "teacher"',
-        totalClasses: 'SELECT COUNT(*) as count FROM classes',
-        totalHomework: 'SELECT COUNT(*) as count FROM homework',
-        totalNotices: 'SELECT COUNT(*) as count FROM notices',
-        totalFees: 'SELECT SUM(amount) as total FROM fees WHERE status = "PAID"'
-    };
+exports.getPlatformAnalytics = async (req, res) => {
+    try {
+        const [
+            { count: totalSchools },
+            { count: activeSchools },
+            { count: totalStudents },
+            { count: totalTeachers },
+            { count: totalClasses },
+            { count: totalHomework },
+            { count: totalNotices }
+        ] = await Promise.all([
+            supabase.from('schools').select('*', { count: 'exact', head: true }),
+            supabase.from('schools').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+            supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+            supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
+            supabase.from('classes').select('*', { count: 'exact', head: true }),
+            supabase.from('homework').select('*', { count: 'exact', head: true }),
+            supabase.from('notices').select('*', { count: 'exact', head: true })
+        ]);
 
-    const results = {};
-    let completed = 0;
-    const total = Object.keys(queries).length;
+        // Get total fees
+        const { data: feeData } = await supabase
+            .from('fees')
+            .select('amount')
+            .eq('status', 'PAID');
+        const totalFees = feeData?.reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
 
-    Object.entries(queries).forEach(([key, query]) => {
-        db.get(query, [], (err, row) => {
-            if (!err) {
-                results[key] = row?.count || row?.total || 0;
-            }
-            completed++;
-            if (completed === total) {
-                res.status(200).json(results);
-            }
+        res.status(200).json({
+            totalSchools: totalSchools || 0,
+            activeSchools: activeSchools || 0,
+            totalStudents: totalStudents || 0,
+            totalTeachers: totalTeachers || 0,
+            totalClasses: totalClasses || 0,
+            totalHomework: totalHomework || 0,
+            totalNotices: totalNotices || 0,
+            totalFees
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Detailed School Stats
-exports.getSchoolDetails = (req, res) => {
+exports.getSchoolDetails = async (req, res) => {
     const { id } = req.params;
 
-    const stats = {};
+    try {
+        const { data: school, error } = await supabase
+            .from('schools')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    // Get school info
-    db.get('SELECT * FROM schools WHERE id = ?', [id], (err, school) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!school) return res.status(404).json({ message: 'School not found' });
+        if (error || !school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
 
-        stats.school = school;
+        // Get counts
+        const { count: classCount } = await supabase
+            .from('classes')
+            .select('*', { count: 'exact', head: true })
+            .eq('school_id', id);
 
-        // Get student count
-        db.get('SELECT COUNT(*) as count FROM users u JOIN classes c ON u.class_id = c.id WHERE c.school_id = ? AND u.role = "parent"', [id], (err, result) => {
-            stats.studentCount = result?.count || 0;
+        const { count: noticeCount } = await supabase
+            .from('notices')
+            .select('*', { count: 'exact', head: true })
+            .eq('school_id', id);
 
-            // Get teacher count
-            db.get('SELECT COUNT(*) as count FROM users u JOIN classes c ON u.class_id = c.id WHERE c.school_id = ? AND u.role = "teacher"', [id], (err, result) => {
-                stats.teacherCount = result?.count || 0;
+        // Get user counts via classes
+        const { data: classes } = await supabase
+            .from('classes')
+            .select('id')
+            .eq('school_id', id);
 
-                // Get class count
-                db.get('SELECT COUNT(*) as count FROM classes WHERE school_id = ?', [id], (err, result) => {
-                    stats.classCount = result?.count || 0;
+        const classIds = classes?.map(c => c.id) || [];
 
-                    // Get homework count
-                    db.get('SELECT COUNT(*) as count FROM homework h JOIN classes c ON h.class_id = c.id WHERE c.school_id = ?', [id], (err, result) => {
-                        stats.homeworkCount = result?.count || 0;
+        let studentCount = 0, teacherCount = 0, homeworkCount = 0;
+        if (classIds.length > 0) {
+            const { count: students } = await supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true })
+                .in('class_id', classIds)
+                .eq('role', 'parent');
+            studentCount = students || 0;
 
-                        // Get notice count
-                        db.get('SELECT COUNT(*) as count FROM notices WHERE school_id = ?', [id], (err, result) => {
-                            stats.noticeCount = result?.count || 0;
+            const { count: teachers } = await supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true })
+                .in('class_id', classIds)
+                .eq('role', 'teacher');
+            teacherCount = teachers || 0;
 
-                            // Get fee stats
-                            db.get('SELECT SUM(amount) as total, COUNT(*) as count FROM fees f JOIN users u ON f.parent_id = u.id JOIN classes c ON u.class_id = c.id WHERE c.school_id = ? AND f.status = "PAID"', [id], (err, result) => {
-                                stats.feesCollected = result?.total || 0;
-                                stats.feeCount = result?.count || 0;
+            const { count: hw } = await supabase
+                .from('homework')
+                .select('*', { count: 'exact', head: true })
+                .in('class_id', classIds);
+            homeworkCount = hw || 0;
+        }
 
-                                res.status(200).json(stats);
-                            });
-                        });
-                    });
-                });
-            });
+        res.status(200).json({
+            school,
+            studentCount,
+            teacherCount,
+            classCount: classCount || 0,
+            homeworkCount,
+            noticeCount: noticeCount || 0,
+            feesCollected: 0,
+            feeCount: 0
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get All Users Overview
-exports.getAllUsers = (req, res) => {
-    const sql = `
-        SELECT u.*, c.class_name, s.school_name 
-        FROM users u
-        JOIN classes c ON u.class_id = c.id
-        JOIN schools s ON c.school_id = s.id
-        ORDER BY u.created_at DESC
-    `;
+exports.getAllUsers = async (req, res) => {
+    try {
+        const { data: users, error } = await supabase
+            .from('users')
+            .select(`
+                *,
+                classes (class_name, school_id, schools (school_name))
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-    db.all(sql, [], (err, users) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (error) return res.status(500).json({ error: error.message });
 
-        const teachers = users.filter(u => u.role === 'teacher');
-        const parents = users.filter(u => u.role === 'parent');
+        const transformedUsers = (users || []).map(u => ({
+            ...u,
+            class_name: u.classes?.class_name,
+            school_name: u.classes?.schools?.school_name,
+            classes: undefined
+        }));
+
+        const teachers = transformedUsers.filter(u => u.role === 'teacher');
+        const parents = transformedUsers.filter(u => u.role === 'parent');
 
         res.status(200).json({
-            totalUsers: users.length,
+            totalUsers: transformedUsers.length,
             totalTeachers: teachers.length,
             totalParents: parents.length,
-            teachers: teachers.slice(0, 50), // First 50
-            parents: parents.slice(0, 50),    // First 50
-            allUsers: users.slice(0, 100)     // First 100
+            teachers: teachers.slice(0, 50),
+            parents: parents.slice(0, 50),
+            allUsers: transformedUsers
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get All Homework (Platform-Wide)
-exports.getAllHomework = (req, res) => {
-    const sql = `
-        SELECT h.*, c.class_name, s.school_name 
-        FROM homework h
-        JOIN classes c ON h.class_id = c.id
-        JOIN schools s ON c.school_id = s.id
-        ORDER BY h.created_at DESC
-        LIMIT 100
-    `;
+exports.getAllHomework = async (req, res) => {
+    try {
+        const { data: homework, error } = await supabase
+            .from('homework')
+            .select(`*, classes (class_name, schools (school_name))`)
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-    db.all(sql, [], (err, homework) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(homework);
-    });
+        if (error) return res.status(500).json({ error: error.message });
+
+        const transformed = (homework || []).map(h => ({
+            ...h,
+            class_name: h.classes?.class_name,
+            school_name: h.classes?.schools?.school_name,
+            classes: undefined
+        }));
+
+        res.status(200).json(transformed);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get All Notices (Platform-Wide)
-exports.getAllNotices = (req, res) => {
-    const sql = `
-        SELECT n.*, s.school_name, c.class_name 
-        FROM notices n
-        JOIN schools s ON n.school_id = s.id
-        LEFT JOIN classes c ON n.class_id = c.id
-        ORDER BY n.created_at DESC
-        LIMIT 100
-    `;
+exports.getAllNotices = async (req, res) => {
+    try {
+        const { data: notices, error } = await supabase
+            .from('notices')
+            .select(`*, schools (school_name), classes (class_name)`)
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-    db.all(sql, [], (err, notices) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(notices);
-    });
+        if (error) return res.status(500).json({ error: error.message });
+
+        const transformed = (notices || []).map(n => ({
+            ...n,
+            school_name: n.schools?.school_name,
+            class_name: n.classes?.class_name,
+            schools: undefined,
+            classes: undefined
+        }));
+
+        res.status(200).json(transformed);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Homework (Content Moderation)
-exports.deleteHomework = (req, res) => {
+exports.deleteHomework = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM homework WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Homework not found' });
+    try {
+        const { data, error } = await supabase
+            .from('homework')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Homework not found' });
         res.status(200).json({ message: 'Homework deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Notice (Content Moderation)
-exports.deleteNoticeAdmin = (req, res) => {
+exports.deleteNoticeAdmin = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM notices WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Notice not found' });
+    try {
+        const { data, error } = await supabase
+            .from('notices')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Notice not found' });
         res.status(200).json({ message: 'Notice deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ===== SUPER ADMIN CONTROL FEATURES =====
 
 // Reset School Password
-exports.resetSchoolPassword = (req, res) => {
+exports.resetSchoolPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
@@ -236,210 +350,213 @@ exports.resetSchoolPassword = (req, res) => {
 
     const passwordHash = bcrypt.hashSync(newPassword, 8);
 
-    db.run('UPDATE schools SET password_hash = ? WHERE id = ?', [passwordHash, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'School not found' });
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .update({ password_hash: passwordHash })
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'School not found' });
         res.status(200).json({ message: 'Password reset successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Block/Unblock School
-exports.toggleSchoolBlock = (req, res) => {
+exports.toggleSchoolBlock = async (req, res) => {
     const { id } = req.params;
-    const { blocked } = req.body; // true or false
-
+    const { blocked } = req.body;
     const newStatus = blocked ? 'suspended' : 'active';
 
-    db.run('UPDATE schools SET status = ? WHERE id = ?', [newStatus, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'School not found' });
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .update({ status: newStatus })
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'School not found' });
         res.status(200).json({
             message: blocked ? 'School blocked successfully' : 'School unblocked successfully',
             newStatus
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Update School Plan
-exports.updateSchoolPlan = (req, res) => {
+exports.updateSchoolPlan = async (req, res) => {
     const { id } = req.params;
     const { plan_type, plan_expiry_date, max_students, recordSale, saleAmount } = req.body;
 
-    const updates = [];
-    const params = [];
+    const updates = {};
+    if (plan_type) updates.plan_type = plan_type;
+    if (plan_expiry_date) updates.plan_expiry_date = plan_expiry_date;
+    if (max_students) updates.max_students = max_students;
 
-    if (plan_type) {
-        updates.push('plan_type = ?');
-        params.push(plan_type);
-    }
-    if (plan_expiry_date) {
-        updates.push('plan_expiry_date = ?');
-        params.push(plan_expiry_date);
-    }
-    if (max_students) {
-        updates.push('max_students = ?');
-        params.push(max_students);
-    }
-
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
         return res.status(400).json({ message: 'No updates provided' });
     }
 
-    params.push(id);
-    const sql = `UPDATE schools SET ${updates.join(', ')} WHERE id = ?`;
+    try {
+        const { data, error } = await supabase
+            .from('schools')
+            .update(updates)
+            .eq('id', id)
+            .select();
 
-    db.run(sql, params, function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'School not found' });
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'School not found' });
 
-        // If recordSale is true, create a verified payment record
+        // Record sale if requested
         if (recordSale && plan_type) {
             const amount = saleAmount || (plan_type === 'basic' ? 299 : plan_type === 'standard' ? 499 : plan_type === 'premium' ? 799 : 0);
-
             if (amount > 0) {
-                const paymentCode = `MANUAL-${id}-${Date.now()}`;
-                db.run(
-                    `INSERT INTO payments (school_id, plan_id, amount, payment_code, transaction_id, status, verified_at) 
-                     VALUES (?, ?, ?, ?, 'MANUAL_ENTRY', 'verified', CURRENT_TIMESTAMP)`,
-                    [id, plan_type, amount, paymentCode],
-                    (err) => {
-                        if (err) console.error('Error recording manual sale:', err);
-                    }
-                );
+                await supabase.from('payments').insert({
+                    school_id: id,
+                    plan_id: plan_type,
+                    amount,
+                    payment_code: `MANUAL-${id}-${Date.now()}`,
+                    transaction_id: 'MANUAL_ENTRY',
+                    status: 'verified',
+                    verified_at: new Date().toISOString()
+                });
             }
         }
 
         res.status(200).json({ message: 'School plan updated successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-// Get School Full Details (including password info)
-// Get School Full Details (including password info)
+// Get School Full Details
 exports.getSchoolFullDetails = async (req, res) => {
     const { id } = req.params;
 
-    // Helper for promise-based query
-    const query = (sql, params = []) => new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
-
-    const getOne = (sql, params = []) => new Promise((resolve, reject) => {
-        db.get(sql, params, (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-        });
-    });
-
     try {
-        const school = await getOne('SELECT * FROM schools WHERE id = ?', [id]);
-        if (!school) return res.status(404).json({ message: 'School not found' });
+        const { data: school, error } = await supabase
+            .from('schools')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !school) {
+            return res.status(404).json({ message: 'School not found' });
+        }
 
         const { password_hash, ...schoolData } = school;
 
-        const [classes, users, homework, notices, payments] = await Promise.all([
-            query('SELECT * FROM classes WHERE school_id = ?', [id]),
-            query('SELECT u.*, c.class_name FROM users u JOIN classes c ON u.class_id = c.id WHERE c.school_id = ?', [id]),
-            query('SELECT h.*, c.class_name FROM homework h JOIN classes c ON h.class_id = c.id WHERE c.school_id = ?', [id]),
-            query('SELECT * FROM notices WHERE school_id = ?', [id]),
-            query('SELECT * FROM payments WHERE school_id = ?', [id])
+        const [
+            { data: classes },
+            { data: notices },
+            { data: payments }
+        ] = await Promise.all([
+            supabase.from('classes').select('*').eq('school_id', id),
+            supabase.from('notices').select('*').eq('school_id', id),
+            supabase.from('payments').select('*').eq('school_id', id)
         ]);
+
+        const classIds = classes?.map(c => c.id) || [];
+        let users = [], homework = [];
+
+        if (classIds.length > 0) {
+            const { data: usersData } = await supabase
+                .from('users')
+                .select('*, classes (class_name)')
+                .in('class_id', classIds);
+            users = (usersData || []).map(u => ({ ...u, class_name: u.classes?.class_name }));
+
+            const { data: hwData } = await supabase
+                .from('homework')
+                .select('*, classes (class_name)')
+                .in('class_id', classIds);
+            homework = (hwData || []).map(h => ({ ...h, class_name: h.classes?.class_name }));
+        }
 
         res.status(200).json({
             ...schoolData,
-            classes,
+            classes: classes || [],
             teachers: users.filter(u => u.role === 'teacher'),
             students: users.filter(u => u.role === 'parent'),
             homework,
-            notices,
-            payments
+            notices: notices || [],
+            payments: payments || []
         });
-
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
 // Get All Users with Detailed Info (Paginated)
-exports.getAllUsersDetailed = (req, res) => {
+exports.getAllUsersDetailed = async (req, res) => {
     const { page = 1, limit = 50, role, school_id } = req.query;
     const offset = (page - 1) * limit;
 
-    let whereClauses = [];
-    let params = [];
+    try {
+        let query = supabase
+            .from('users')
+            .select(`
+                id, name, phone, role, address, contact_phone, created_at,
+                classes!inner (class_name, school_id, schools (school_name, email, status))
+            `, { count: 'exact' });
 
-    if (role) {
-        whereClauses.push('u.role = ?');
-        params.push(role);
-    }
-    if (school_id) {
-        whereClauses.push('c.school_id = ?');
-        params.push(school_id);
-    }
+        if (role) query = query.eq('role', role);
+        if (school_id) query = query.eq('classes.school_id', school_id);
 
-    const whereSQL = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+        const { data: users, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
 
-    const sql = `
-        SELECT 
-            u.id,
-            u.name,
-            u.phone,
-            u.role,
-            u.address,
-            u.contact_phone,
-            u.created_at,
-            c.class_name,
-            c.school_id,
-            s.school_name,
-            s.email as school_email,
-            s.status as school_status
-        FROM users u
-        JOIN classes c ON u.class_id = c.id
-        JOIN schools s ON c.school_id = s.id
-        ${whereSQL}
-        ORDER BY u.created_at DESC
-        LIMIT ? OFFSET ?
-    `;
+        if (error) return res.status(500).json({ error: error.message });
 
-    db.all(sql, [...params, limit, offset], (err, users) => {
-        if (err) return res.status(500).json({ error: err.message });
+        const transformed = (users || []).map(u => ({
+            ...u,
+            class_name: u.classes?.class_name,
+            school_id: u.classes?.school_id,
+            school_name: u.classes?.schools?.school_name,
+            school_email: u.classes?.schools?.email,
+            school_status: u.classes?.schools?.status,
+            classes: undefined
+        }));
 
-        // Get total count
-        const countSQL = `
-            SELECT COUNT(*) as total
-            FROM users u
-            JOIN classes c ON u.class_id = c.id
-            ${whereSQL}
-        `;
-
-        db.get(countSQL, params, (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-
-            res.status(200).json({
-                users,
-                total: result.total,
-                page: parseInt(page),
-                totalPages: Math.ceil(result.total / limit)
-            });
+        res.status(200).json({
+            users: transformed,
+            total: count || 0,
+            page: parseInt(page),
+            totalPages: Math.ceil((count || 0) / limit)
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-// Delete User (with cascade options)
-exports.deleteUser = (req, res) => {
+// Delete User
+exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM users WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'User not found' });
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'User not found' });
         res.status(200).json({ message: 'User deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Reset User Password
-exports.resetUserPassword = (req, res) => {
+exports.resetUserPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
@@ -449,146 +566,182 @@ exports.resetUserPassword = (req, res) => {
 
     const passwordHash = bcrypt.hashSync(newPassword, 8);
 
-    db.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'User not found' });
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ password_hash: passwordHash })
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'User not found' });
         res.status(200).json({ message: 'User password reset successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ===== NEW FEATURES =====
 
 // Global Search
-exports.getGlobalSearch = (req, res) => {
+exports.getGlobalSearch = async (req, res) => {
     const { query } = req.query;
-    if (!query || query.length < 2) return res.status(200).json({ schools: [], users: [], payments: [] });
-
-    const search = `%${query}%`;
-    const results = { schools: [], users: [], payments: [] };
-
-    // Search Schools
-    db.all('SELECT id, school_name, email, status FROM schools WHERE school_name LIKE ? OR email LIKE ?', [search, search], (err, schools) => {
-        if (!err) results.schools = schools;
-
-        // Search Users
-        db.all(`
-            SELECT u.id, u.name, u.phone, u.role, s.school_name 
-            FROM users u 
-            JOIN classes c ON u.class_id = c.id 
-            JOIN schools s ON c.school_id = s.id 
-            WHERE u.name LIKE ? OR u.phone LIKE ?`, [search, search], (err, users) => {
-            if (!err) results.users = users;
-
-            // Search Payments
-            db.all(`
-                SELECT p.*, s.school_name 
-                FROM payments p 
-                JOIN schools s ON p.school_id = s.id 
-                WHERE p.transaction_id LIKE ? OR p.payment_code LIKE ?`, [search, search], (err, payments) => {
-                if (!err) results.payments = payments;
-
-                res.status(200).json(results);
-            });
-        });
-    });
-};
-
-// Get Activity Logs
-exports.getActivityLogs = (req, res) => {
-    db.all('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100', [], (err, logs) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(logs);
-    });
-};
-
-// Get Support Tickets
-exports.getSupportTickets = (req, res) => {
-    db.all(`
-        SELECT t.*, s.school_name, s.email 
-        FROM support_tickets t 
-        JOIN schools s ON t.school_id = s.id 
-        ORDER BY t.created_at DESC`, [], (err, tickets) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(tickets);
-    });
-};
-
-// Reply to Support Ticket
-exports.replySupportTicket = (req, res) => {
-    const { id } = req.params;
-    const { response } = req.body;
-
-    db.run('UPDATE support_tickets SET admin_response = ?, status = "closed", resolved_at = CURRENT_TIMESTAMP WHERE id = ?', [response, id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ message: 'Reply sent successfully' });
-    });
-};
-
-// Comprehensive Dashboard Overview
-// Comprehensive Dashboard Overview
-exports.getComprehensiveOverview = async (req, res) => {
-    const getOne = (sql) => new Promise((resolve) => {
-        db.get(sql, [], (err, row) => resolve(row?.count || row?.total || 0));
-    });
-
-    const getGraph = (sql) => new Promise((resolve) => {
-        db.all(sql, [], (err, rows) => resolve(rows || []));
-    });
+    if (!query || query.length < 2) {
+        return res.status(200).json({ schools: [], users: [], payments: [] });
+    }
 
     try {
-        const [
-            totalSchools, activeSchools, suspendedSchools,
-            totalStudents, totalTeachers, totalParents,
-            totalRevenue, todaySignups, todayPayments, monthlyRevenue,
-            totalHomework, totalNotices, activeSubscriptions,
-            revenueGraph, schoolGrowthGraph, userGrowthGraph, planSalesGraph
-        ] = await Promise.all([
-            getOne('SELECT COUNT(*) as count FROM schools'),
-            getOne('SELECT COUNT(*) as count FROM schools WHERE status = "active"'),
-            getOne('SELECT COUNT(*) as count FROM schools WHERE status = "suspended"'),
-            getOne('SELECT COUNT(*) as count FROM users WHERE role = "parent"'),
-            getOne('SELECT COUNT(*) as count FROM users WHERE role = "teacher"'),
-            getOne('SELECT COUNT(*) as count FROM users WHERE role = "parent"'),
-            getOne('SELECT SUM(amount) as total FROM payments WHERE status = "verified"'),
-            getOne('SELECT COUNT(*) as count FROM schools WHERE date(created_at) = date("now")'),
-            getOne('SELECT SUM(amount) as total FROM payments WHERE status = "verified" AND date(verified_at) = date("now")'),
-            getOne('SELECT SUM(amount) as total FROM payments WHERE status = "verified" AND strftime("%Y-%m", verified_at) = strftime("%Y-%m", "now")'),
-            getOne('SELECT COUNT(*) as count FROM homework'),
-            getOne('SELECT COUNT(*) as count FROM notices'),
-            getOne('SELECT COUNT(*) as count FROM schools WHERE plan_expiry_date > date("now")'),
-            // Graphs
-            getGraph(`SELECT strftime('%Y-%m', verified_at) as name, SUM(amount) as value FROM payments WHERE status = 'verified' AND verified_at >= date('now', '-6 months') GROUP BY name ORDER BY name`),
-            getGraph(`SELECT strftime('%Y-%m', created_at) as name, COUNT(*) as value FROM schools WHERE created_at >= date('now', '-6 months') GROUP BY name ORDER BY name`),
-            getGraph(`SELECT strftime('%Y-%m', created_at) as name, COUNT(*) as value FROM users WHERE created_at >= date('now', '-6 months') GROUP BY name ORDER BY name`),
-            getGraph(`SELECT plan_type as name, COUNT(*) as value FROM schools GROUP BY plan_type`)
+        const search = `%${query}%`;
+
+        const [{ data: schools }, { data: users }, { data: payments }] = await Promise.all([
+            supabase.from('schools').select('id, school_name, email, status').or(`school_name.ilike.${search},email.ilike.${search}`),
+            supabase.from('users').select('id, name, phone, role, school_id').or(`name.ilike.${search},phone.ilike.${search}`),
+            supabase.from('payments').select('*, schools (school_name)').or(`transaction_id.ilike.${search},payment_code.ilike.${search}`)
         ]);
 
         res.status(200).json({
-            totalSchools, activeSchools, suspendedSchools,
-            totalStudents, totalTeachers, totalParents,
-            totalRevenue, todaySignups, todayPayments, monthlyRevenue,
-            totalHomework, totalNotices, activeSubscriptions,
-            graphs: {
-                revenue: revenueGraph,
-                newSchools: schoolGrowthGraph,
-                activeUsers: userGrowthGraph,
-                planSales: planSalesGraph
-            }
+            schools: schools || [],
+            users: users || [],
+            payments: (payments || []).map(p => ({ ...p, school_name: p.schools?.school_name }))
         });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
 
-// Download System Backup
+// Get Activity Logs
+exports.getActivityLogs = async (req, res) => {
+    try {
+        const { data: logs, error } = await supabase
+            .from('activity_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.status(200).json(logs || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get Support Tickets
+exports.getSupportTickets = async (req, res) => {
+    try {
+        const { data: tickets, error } = await supabase
+            .from('support_tickets')
+            .select('*, schools (school_name, email)')
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        const transformed = (tickets || []).map(t => ({
+            ...t,
+            school_name: t.schools?.school_name,
+            email: t.schools?.email,
+            schools: undefined
+        }));
+
+        res.status(200).json(transformed);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Reply to Support Ticket
+exports.replySupportTicket = async (req, res) => {
+    const { id } = req.params;
+    const { response } = req.body;
+
+    try {
+        const { error } = await supabase
+            .from('support_tickets')
+            .update({
+                admin_response: response,
+                status: 'closed',
+                resolved_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.status(200).json({ message: 'Reply sent successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Comprehensive Dashboard Overview
+exports.getComprehensiveOverview = async (req, res) => {
+    try {
+        const [
+            { count: totalSchools },
+            { count: activeSchools },
+            { count: suspendedSchools },
+            { count: totalStudents },
+            { count: totalTeachers },
+            { count: totalHomework },
+            { count: totalNotices }
+        ] = await Promise.all([
+            supabase.from('schools').select('*', { count: 'exact', head: true }),
+            supabase.from('schools').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+            supabase.from('schools').select('*', { count: 'exact', head: true }).eq('status', 'suspended'),
+            supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+            supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
+            supabase.from('homework').select('*', { count: 'exact', head: true }),
+            supabase.from('notices').select('*', { count: 'exact', head: true })
+        ]);
+
+        // Get revenue
+        const { data: payments } = await supabase
+            .from('payments')
+            .select('amount')
+            .eq('status', 'verified');
+        const totalRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+
+        // Get plan distribution
+        const { data: planData } = await supabase
+            .from('schools')
+            .select('plan_type');
+        const planSalesGraph = [];
+        const planCounts = {};
+        planData?.forEach(s => {
+            planCounts[s.plan_type] = (planCounts[s.plan_type] || 0) + 1;
+        });
+        Object.entries(planCounts).forEach(([name, value]) => {
+            planSalesGraph.push({ name, value });
+        });
+
+        res.status(200).json({
+            totalSchools: totalSchools || 0,
+            activeSchools: activeSchools || 0,
+            suspendedSchools: suspendedSchools || 0,
+            totalStudents: totalStudents || 0,
+            totalTeachers: totalTeachers || 0,
+            totalParents: totalStudents || 0,
+            totalRevenue,
+            todaySignups: 0,
+            todayPayments: 0,
+            monthlyRevenue: totalRevenue,
+            totalHomework: totalHomework || 0,
+            totalNotices: totalNotices || 0,
+            activeSubscriptions: activeSchools || 0,
+            graphs: {
+                revenue: [],
+                newSchools: [],
+                activeUsers: [],
+                planSales: planSalesGraph
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Download System Backup - Not available with Supabase
 exports.downloadSystemBackup = (req, res) => {
-    const path = require('path');
-    const dbPath = path.resolve(__dirname, '../school.db');
-    res.download(dbPath, `school_desk_system_backup_${Date.now()}.db`, (err) => {
-        if (err) {
-            console.error('Backup download error:', err);
-            res.status(500).json({ error: 'Could not download backup' });
-        }
+    res.status(400).json({
+        message: 'Database backup not available. Please use Supabase dashboard for backups.',
+        supabaseUrl: 'https://supabase.com/dashboard'
     });
 };
 
@@ -597,20 +750,33 @@ exports.downloadSystemBackup = (req, res) => {
 const { generatePartnerCode } = require('../utils/partnerCodeGenerator');
 
 // Get All Partners
-exports.getAllPartners = (req, res) => {
-    db.all(`
-        SELECT 
-            p.*,
-            COUNT(DISTINCT ps.school_id) as total_schools,
-            SUM(ps.revenue) as total_revenue
-        FROM partners p
-        LEFT JOIN partner_schools ps ON p.unique_code = ps.partner_code
-        GROUP BY p.id
-        ORDER BY p.created_at DESC
-    `, [], (err, partners) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ partners: partners || [] });
-    });
+exports.getAllPartners = async (req, res) => {
+    try {
+        const { data: partners, error } = await supabase
+            .from('partners')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        // Get school counts for each partner
+        const partnersWithStats = await Promise.all((partners || []).map(async (p) => {
+            const { data: schoolData } = await supabase
+                .from('partner_schools')
+                .select('school_id, revenue')
+                .eq('partner_code', p.unique_code);
+
+            return {
+                ...p,
+                total_schools: schoolData?.length || 0,
+                total_revenue: schoolData?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0
+            };
+        }));
+
+        res.status(200).json({ partners: partnersWithStats });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Add New Partner
@@ -622,190 +788,181 @@ exports.addPartner = async (req, res) => {
     }
 
     try {
-        // Generate unique partner code
         const uniqueCode = await generatePartnerCode();
-
-        // Hash password
         const passwordHash = bcrypt.hashSync(password, 10);
 
-        db.run(
-            `INSERT INTO partners (name, email, phone, country, unique_code, password_hash) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, email, phone, country, uniqueCode, passwordHash],
-            function (err) {
-                if (err) {
-                    if (err.message.includes('UNIQUE constraint failed')) {
-                        return res.status(400).json({ message: 'Email already exists' });
-                    }
-                    return res.status(500).json({ error: err.message });
-                }
+        const { data, error } = await supabase
+            .from('partners')
+            .insert({
+                name,
+                email,
+                phone,
+                country,
+                unique_code: uniqueCode,
+                password_hash: passwordHash
+            })
+            .select()
+            .single();
 
-                res.status(201).json({
-                    message: 'Partner created successfully',
-                    partner: {
-                        id: this.lastID,
-                        name,
-                        email,
-                        phone,
-                        country,
-                        uniqueCode,
-                        status: 'active'
-                    }
-                });
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(400).json({ message: 'Email already exists' });
             }
-        );
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.status(201).json({
+            message: 'Partner created successfully',
+            partner: { id: data.id, name, email, phone, country, uniqueCode, status: 'active' }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
 
 // Get Partner Details
-exports.getPartnerDetails = (req, res) => {
+exports.getPartnerDetails = async (req, res) => {
     const { id } = req.params;
 
-    db.get('SELECT * FROM partners WHERE id = ?', [id], (err, partner) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!partner) return res.status(404).json({ message: 'Partner not found' });
+    try {
+        const { data: partner, error } = await supabase
+            .from('partners')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-        // Get partner's schools
-        db.all(`
-            SELECT 
-                s.id,
-                s.school_name,
-                s.email,
-                s.plan_type,
-                s.status,
-                s.created_at,
-                ps.revenue,
-                ps.commission
-            FROM partner_schools ps
-            JOIN schools s ON ps.school_id = s.id
-            WHERE ps.partner_code = ?
-            ORDER BY ps.created_at DESC
-        `, [partner.unique_code], (err, schools) => {
-            if (err) return res.status(500).json({ error: err.message });
+        if (error || !partner) {
+            return res.status(404).json({ message: 'Partner not found' });
+        }
 
-            const { password_hash, ...partnerData } = partner;
+        const { data: schools } = await supabase
+            .from('partner_schools')
+            .select('*, schools (id, school_name, email, plan_type, status, created_at)')
+            .eq('partner_code', partner.unique_code);
 
-            res.status(200).json({
-                ...partnerData,
-                schools: schools || []
-            });
+        const { password_hash, ...partnerData } = partner;
+
+        res.status(200).json({
+            ...partnerData,
+            schools: (schools || []).map(s => ({
+                id: s.schools?.id,
+                school_name: s.schools?.school_name,
+                email: s.schools?.email,
+                plan_type: s.schools?.plan_type,
+                status: s.schools?.status,
+                created_at: s.schools?.created_at,
+                revenue: s.revenue,
+                commission: s.commission
+            }))
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Update Partner
-exports.updatePartner = (req, res) => {
+exports.updatePartner = async (req, res) => {
     const { id } = req.params;
     const { name, phone, country, status } = req.body;
 
-    const updates = [];
-    const params = [];
+    const updates = {};
+    if (name) updates.name = name;
+    if (phone) updates.phone = phone;
+    if (country) updates.country = country;
+    if (status) updates.status = status;
 
-    if (name) {
-        updates.push('name = ?');
-        params.push(name);
-    }
-    if (phone) {
-        updates.push('phone = ?');
-        params.push(phone);
-    }
-    if (country) {
-        updates.push('country = ?');
-        params.push(country);
-    }
-    if (status) {
-        updates.push('status = ?');
-        params.push(status);
-    }
-
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
         return res.status(400).json({ message: 'No updates provided' });
     }
 
-    params.push(id);
+    try {
+        const { data, error } = await supabase
+            .from('partners')
+            .update(updates)
+            .eq('id', id)
+            .select();
 
-    db.run(
-        `UPDATE partners SET ${updates.join(', ')} WHERE id = ?`,
-        params,
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'Partner not found' });
-            res.status(200).json({ message: 'Partner updated successfully' });
-        }
-    );
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Partner not found' });
+        res.status(200).json({ message: 'Partner updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Partner
-exports.deletePartner = (req, res) => {
+exports.deletePartner = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM partners WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Partner not found' });
+    try {
+        const { data, error } = await supabase
+            .from('partners')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Partner not found' });
         res.status(200).json({ message: 'Partner deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Get Partner Analytics
-exports.getPartnerAnalytics = (req, res) => {
+exports.getPartnerAnalytics = async (req, res) => {
     const { id } = req.params;
 
-    db.get('SELECT unique_code FROM partners WHERE id = ?', [id], (err, partner) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!partner) return res.status(404).json({ message: 'Partner not found' });
+    try {
+        const { data: partner } = await supabase
+            .from('partners')
+            .select('unique_code')
+            .eq('id', id)
+            .single();
 
-        // Get comprehensive analytics
-        db.all(`
-            SELECT 
-                COUNT(*) as total_schools,
-                SUM(revenue) as totalRevenue,
-                SUM(commission) as totalCommission,
-                AVG(revenue) as avgRevenue
-            FROM partner_schools
-            WHERE partner_code = ?
-        `, [partner.unique_code], (err, stats) => {
-            if (err) return res.status(500).json({ error: err.message });
+        if (!partner) {
+            return res.status(404).json({ message: 'Partner not found' });
+        }
 
-            // Get monthly breakdown
-            db.all(`
-                SELECT 
-                    strftime('%Y-%m', ps.created_at) as month,
-                    COUNT(*) as schools,
-                    SUM(ps.revenue) as revenue
-                FROM partner_schools ps
-                WHERE ps.partner_code = ?
-                GROUP BY month
-                ORDER BY month DESC
-                LIMIT 12
-            `, [partner.unique_code], (err, monthlyData) => {
-                if (err) return res.status(500).json({ error: err.message });
+        const { data: schoolData } = await supabase
+            .from('partner_schools')
+            .select('revenue, commission')
+            .eq('partner_code', partner.unique_code);
 
-                res.status(200).json({
-                    ...stats[0],
-                    monthlyBreakdown: monthlyData || []
-                });
-            });
+        const totalRevenue = schoolData?.reduce((sum, s) => sum + (s.revenue || 0), 0) || 0;
+        const totalCommission = schoolData?.reduce((sum, s) => sum + (s.commission || 0), 0) || 0;
+
+        res.status(200).json({
+            total_schools: schoolData?.length || 0,
+            totalRevenue,
+            totalCommission,
+            avgRevenue: schoolData?.length ? totalRevenue / schoolData.length : 0,
+            monthlyBreakdown: []
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ===== PROMO CODE MANAGEMENT =====
 
 // Get All Promo Codes
-exports.getAllPromoCodes = (req, res) => {
-    db.all(`
-        SELECT * FROM promo_codes 
-        ORDER BY created_at DESC
-    `, [], (err, codes) => {
-        if (err) return res.status(500).json({ error: err.message });
+exports.getAllPromoCodes = async (req, res) => {
+    try {
+        const { data: codes, error } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
         res.status(200).json({ promoCodes: codes || [] });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Create Promo Code
-exports.createPromoCode = (req, res) => {
+exports.createPromoCode = async (req, res) => {
     const { code, type, value, applicablePlans, validFrom, validTo, usageLimit } = req.body;
 
     if (!code || !type || !value || !applicablePlans || !validFrom || !validTo) {
@@ -816,75 +973,104 @@ exports.createPromoCode = (req, res) => {
         return res.status(400).json({ message: 'Type must be either "flat" or "percentage"' });
     }
 
-    db.run(
-        `INSERT INTO promo_codes (code, type, value, applicable_plans, valid_from, valid_to, usage_limit) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [code, type, value, JSON.stringify(applicablePlans), validFrom, validTo, usageLimit],
-        function (err) {
-            if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(400).json({ message: 'Promo code already exists' });
-                }
-                return res.status(500).json({ error: err.message });
+    try {
+        const { data, error } = await supabase
+            .from('promo_codes')
+            .insert({
+                code,
+                type,
+                value,
+                applicable_plans: JSON.stringify(applicablePlans),
+                valid_from: validFrom,
+                valid_to: validTo,
+                usage_limit: usageLimit
+            })
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(400).json({ message: 'Promo code already exists' });
             }
-            res.status(201).json({ message: 'Promo code created successfully', id: this.lastID });
+            return res.status(500).json({ error: error.message });
         }
-    );
+
+        res.status(201).json({ message: 'Promo code created successfully', id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Delete Promo Code
-exports.deletePromoCode = (req, res) => {
+exports.deletePromoCode = async (req, res) => {
     const { id } = req.params;
 
-    db.run('DELETE FROM promo_codes WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Promo code not found' });
+    try {
+        const { data, error } = await supabase
+            .from('promo_codes')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Promo code not found' });
         res.status(200).json({ message: 'Promo code deleted successfully' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // ===== PAYOUT MANAGEMENT =====
 
 // Get All Payout Requests
-exports.getPayoutRequests = (req, res) => {
-    db.all(`
-        SELECT 
-            pr.*,
-            p.name as partner_name,
-            p.email as partner_email,
-            p.unique_code as partner_code
-        FROM payout_requests pr
-        JOIN partners p ON pr.partner_id = p.id
-        ORDER BY pr.created_at DESC
-    `, [], (err, requests) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ payouts: requests || [] });
-    });
+exports.getPayoutRequests = async (req, res) => {
+    try {
+        const { data: requests, error } = await supabase
+            .from('payout_requests')
+            .select('*, partners (name, email, unique_code)')
+            .order('created_at', { ascending: false });
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        const transformed = (requests || []).map(r => ({
+            ...r,
+            partner_name: r.partners?.name,
+            partner_email: r.partners?.email,
+            partner_code: r.partners?.unique_code,
+            partners: undefined
+        }));
+
+        res.status(200).json({ payouts: transformed });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Update Payout Status
-exports.updatePayoutStatus = (req, res) => {
+exports.updatePayoutStatus = async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body; // 'completed' or 'rejected'
+    const { status } = req.body;
 
     if (!['completed', 'rejected'].includes(status)) {
         return res.status(400).json({ message: 'Invalid status' });
     }
 
-    db.run(
-        'UPDATE payout_requests SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [status, id],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'Payout request not found' });
+    try {
+        const { data, error } = await supabase
+            .from('payout_requests')
+            .update({
+                status,
+                processed_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select();
 
-            // If rejected, we might want to notify the partner (optional enhancement)
-
-            res.status(200).json({ message: `Payout marked as ${status}` });
-        }
-    );
+        if (error) return res.status(500).json({ error: error.message });
+        if (!data || data.length === 0) return res.status(404).json({ message: 'Payout request not found' });
+        res.status(200).json({ message: `Payout marked as ${status}` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 module.exports = exports;
-
-
