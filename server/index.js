@@ -30,6 +30,7 @@ const parentRoutes = require('./routes/parent');
 const superAdminRoutes = require('./routes/superAdmin');
 const partnerRoutes = require('./routes/partner');
 const performanceRoutes = require('./routes/performance');
+const paymentRoutes = require('./routes/payment');
 
 // Register Routes
 app.use('/api/school', schoolRoutes);
@@ -39,6 +40,7 @@ app.use('/api/parent', parentRoutes);
 app.use('/api/admin', superAdminRoutes);
 app.use('/api/partner', partnerRoutes);
 app.use('/api/performance', performanceRoutes); // Performance monitoring
+app.use('/api/payment', paymentRoutes); // Cashfree Payment Gateway
 
 // Root and Health Check routes
 app.get('/', (req, res) => {

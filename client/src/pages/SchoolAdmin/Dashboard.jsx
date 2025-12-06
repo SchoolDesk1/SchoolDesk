@@ -6,10 +6,10 @@ import SubscriptionTab from './SubscriptionTab';
 import VehiclesTab from './VehiclesTab';
 import EventsTab from './EventsTab';
 
-const SchoolAdminDashboard = () => {
+const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const navigate = useNavigate();
     const { user, token, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState('students');
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [classes, setClasses] = useState([]);
     const [notices, setNotices] = useState([]);
     const [students, setStudents] = useState([]);

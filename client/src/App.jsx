@@ -77,6 +77,13 @@ function App() {
                                 </PrivatePartnerRoute>
                             } />
 
+                            {/* Payment Verification Redirect - preserves query params */}
+                            <Route path="/payment/verify" element={
+                                <PrivateRoute role="school_admin">
+                                    <SchoolAdminDashboard initialTab="subscription" />
+                                </PrivateRoute>
+                            } />
+
                             {/* Unified App Route */}
                             <Route path="/app" element={
                                 <PrivateRoute>

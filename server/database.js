@@ -141,6 +141,7 @@ function initSchema() {
               amount REAL NOT NULL,
               payment_code TEXT UNIQUE NOT NULL,
               transaction_id TEXT,
+              cashfree_order_id TEXT,
               status TEXT DEFAULT 'pending',
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
               verified_at DATETIME,
@@ -229,6 +230,14 @@ function initSchema() {
       // Ignore error if column already exists
       if (err && !err.message.includes('duplicate column name')) {
         console.error('Error adding partner_code column:', err.message);
+      }
+    });
+
+    // Add cashfree_order_id column to payments table if it doesn't exist
+    db.run(`ALTER TABLE payments ADD COLUMN cashfree_order_id TEXT`, (err) => {
+      // Ignore error if column already exists
+      if (err && !err.message.includes('duplicate column name')) {
+        // Column already exists, silently ignore
       }
     });
   });
