@@ -46,6 +46,7 @@ exports.createClass = async (req, res) => {
 
 exports.getClasses = async (req, res) => {
     const schoolId = req.schoolId;
+    console.log('getClasses called - schoolId:', schoolId);
 
     try {
         const { data: classes, error } = await supabase
@@ -54,11 +55,14 @@ exports.getClasses = async (req, res) => {
             .eq('school_id', schoolId);
 
         if (error) {
+            console.error('getClasses error:', error.message);
             return res.status(500).json({ error: error.message });
         }
 
+        console.log('getClasses - found:', classes?.length || 0);
         res.status(200).json(classes || []);
     } catch (err) {
+        console.error('getClasses catch error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
