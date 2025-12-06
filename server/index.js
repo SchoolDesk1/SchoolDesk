@@ -58,22 +58,18 @@ app.get('/api/health', (req, res) => {
 // Serve React Frontend (Production)
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// API 404 fallback - must come BEFORE SPA fallback
-// Use regex pattern for Express 5+ compatibility
-app.use(/^\/api\//, (req, res) => {
-    res.status(404).json({
-        error: 'Not found',
-        message: `API endpoint ${req.originalUrl} does not exist`,
-        method: req.method
-    });
-});
-
-// SPA fallback for non-API routes (client-side routing)
-app.get(/(.*)/, (req, res) => {
-    // Only serve index.html for non-API routes
-    if (req.originalUrl.startsWith('/api')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
+// Consolidated catch-all handler for both API 404s and SPA
+app.use((req, res) => {
+    // If it's an API request that wasn't handled by above routes, return 404 JSON
+    if (req.path.startsWith('/api/') || req.path === '/api') {
+        return res.status(404).json({
+            error: 'Not found',
+            message: `API endpoint ${req.originalUrl} does not exist`,
+            method: req.method
+        });
     }
+
+    // Otherwise serve SPA index.html
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
