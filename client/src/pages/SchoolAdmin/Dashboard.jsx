@@ -5,6 +5,7 @@ import logo from '../../assets/logo.png';
 import SubscriptionTab from './SubscriptionTab';
 import VehiclesTab from './VehiclesTab';
 import EventsTab from './EventsTab';
+import { getApiUrl } from '../../config/api';
 
 const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const navigate = useNavigate();
@@ -100,7 +101,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const fetchClasses = async () => {
         try {
-            const res = await fetch('/api/school/classes', {
+            const res = await fetch(getApiUrl('/api/school/classes'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -110,7 +111,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const fetchNotices = async () => {
         try {
-            const res = await fetch('/api/school/notices', {
+            const res = await fetch(getApiUrl('/api/school/notices'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) {
@@ -129,9 +130,10 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const fetchStudents = async () => {
         try {
-            const url = classFilter
+            const path = classFilter
                 ? `/api/school/users?role=parent&class_id=${classFilter}`
                 : '/api/school/users?role=parent';
+            const url = getApiUrl(path);
             console.log('Fetching students:', url);
             const res = await fetch(url, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -144,9 +146,10 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const fetchTeachers = async () => {
         try {
-            const url = teacherClassFilter
+            const path = teacherClassFilter
                 ? `/api/school/users?role=teacher&class_id=${teacherClassFilter}`
                 : '/api/school/users?role=teacher';
+            const url = getApiUrl(path);
             console.log('Fetching teachers:', url);
             const res = await fetch(url, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -159,7 +162,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const fetchFees = async () => {
         try {
-            const res = await fetch('/api/school/fees/list', {
+            const res = await fetch(getApiUrl('/api/school/fees/list'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -170,7 +173,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const handleCreateClass = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/school/create-class', {
+            const res = await fetch(getApiUrl('/api/school/create-class'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ class_name: newClassName })
@@ -204,7 +207,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
             };
             console.log('Notice payload:', payload);
 
-            const res = await fetch('/api/school/create-notice', {
+            const res = await fetch(getApiUrl('/api/school/create-notice'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(payload)
@@ -232,7 +235,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
             return;
         }
         try {
-            const res = await fetch(`/api/school/notices/${id}`, {
+            const res = await fetch(getApiUrl(`/api/school/notices/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -253,9 +256,10 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
         e.preventDefault();
         try {
             const isUpdate = newStudent.id;
-            const url = isUpdate
+            const path = isUpdate
                 ? `/api/school/users/${newStudent.id}`
                 : '/api/school/create-user';
+            const url = getApiUrl(path);
             const method = isUpdate ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -285,9 +289,10 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
         e.preventDefault();
         try {
             const isUpdate = newTeacher.id;
-            const url = isUpdate
+            const path = isUpdate
                 ? `/api/school/users/${newTeacher.id}`
                 : '/api/school/create-user';
+            const url = getApiUrl(path);
             const method = isUpdate ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -318,7 +323,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
             return;
         }
         try {
-            const res = await fetch(`/api/school/users/${studentId}`, {
+            const res = await fetch(getApiUrl(`/api/school/users/${studentId}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -340,7 +345,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
             return;
         }
         try {
-            const res = await fetch(`/api/school/users/${teacherId}`, {
+            const res = await fetch(getApiUrl(`/api/school/users/${teacherId}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -359,7 +364,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const handleDownloadBackup = async () => {
         try {
-            const res = await fetch('/api/school/backup/download', {
+            const res = await fetch(getApiUrl('/api/school/backup/download'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -394,7 +399,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
             const text = await file.text();
             const backup = JSON.parse(text);
 
-            const res = await fetch('/api/school/backup/restore', {
+            const res = await fetch(getApiUrl('/api/school/backup/restore'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(backup)
@@ -421,7 +426,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     // ========== VEHICLES MANAGEMENT ==========
     const fetchVehicles = async () => {
         try {
-            const res = await fetch('/api/school/vehicles', {
+            const res = await fetch(getApiUrl('/api/school/vehicles'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -433,7 +438,8 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
         e.preventDefault();
         try {
             const isUpdate = newVehicle.id;
-            const url = isUpdate ? `/api/school/vehicles/${newVehicle.id}` : '/api/school/vehicles/create';
+            const path = isUpdate ? `/api/school/vehicles/${newVehicle.id}` : '/api/school/vehicles/create';
+            const url = getApiUrl(path);
             const method = isUpdate ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -455,7 +461,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const handleDeleteVehicle = async (id, name) => {
         if (!window.confirm(`Delete vehicle "${name}"?`)) return;
         try {
-            const res = await fetch(`/api/school/vehicles/${id}`, {
+            const res = await fetch(getApiUrl(`/api/school/vehicles/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -471,7 +477,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const handleAssignVehicle = async (studentId, vehicleId) => {
         try {
-            const res = await fetch('/api/school/vehicles/assign', {
+            const res = await fetch(getApiUrl('/api/school/vehicles/assign'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ student_id: studentId, vehicle_id: vehicleId })
@@ -489,7 +495,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     // ========== EVENTS MANAGEMENT ==========
     const fetchEvents = async () => {
         try {
-            const res = await fetch('/api/school/events', {
+            const res = await fetch(getApiUrl('/api/school/events'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -500,7 +506,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const handleCreateEvent = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/school/events/create', {
+            const res = await fetch(getApiUrl('/api/school/events/create'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(newEvent)
@@ -519,7 +525,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
     const handleDeleteEvent = async (id, title) => {
         if (!window.confirm(`Delete event "${title}"?`)) return;
         try {
-            const res = await fetch(`/api/school/events/${id}`, {
+            const res = await fetch(getApiUrl(`/api/school/events/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -535,7 +541,7 @@ const SchoolAdminDashboard = ({ initialTab = 'students' }) => {
 
     const handleToggleFee = async (studentId, month) => {
         try {
-            const res = await fetch('/api/school/fees/toggle', {
+            const res = await fetch(getApiUrl('/api/school/fees/toggle'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ student_id: studentId, month: month, year: selectedYear })

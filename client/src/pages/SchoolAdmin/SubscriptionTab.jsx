@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CreditCard, Calendar, Users, Building2, Clock, Check, Zap, Shield, Star, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { getApiUrl } from '../../config/api';
 
 // Plan configuration matching backend
 const PLANS = {
@@ -86,7 +87,6 @@ const PLANS = {
     }
 };
 
-const API_URL = '/api';
 
 // Safe JSON parsing helper to prevent crashes
 const safeJsonParse = async (response, context = 'API') => {
@@ -158,7 +158,7 @@ const SubscriptionTab = ({ user, token }) => {
         setPaymentStatus({ type: 'verifying', message: 'Verifying payment...' });
 
         try {
-            const response = await fetch(`${API_URL}/payment/verify/${orderId}`, {
+            const res = await fetch(getApiUrl(`/api/payment/verify/${orderId}`), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -209,7 +209,7 @@ const SubscriptionTab = ({ user, token }) => {
         if (!promoCode.trim() || !selectedPlan) return;
 
         try {
-            const response = await fetch(`${API_URL}/payment/validate-promo`, {
+            const response = await fetch(getApiUrl('/api/payment/validate-promo'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ const SubscriptionTab = ({ user, token }) => {
 
         try {
             // Create order on backend
-            const response = await fetch(`${API_URL}/payment/create-order`, {
+            const response = await fetch(getApiUrl('/api/payment/create-order'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

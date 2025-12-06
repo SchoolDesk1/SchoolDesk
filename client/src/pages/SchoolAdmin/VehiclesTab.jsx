@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 
 const VehiclesTab = ({ token }) => {
     const [vehicles, setVehicles] = useState([]);
@@ -20,7 +21,7 @@ const VehiclesTab = ({ token }) => {
 
     const fetchVehicles = async () => {
         try {
-            const res = await fetch('/api/school/vehicles', {
+            const res = await fetch(getApiUrl('/api/school/vehicles'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) {
@@ -38,7 +39,8 @@ const VehiclesTab = ({ token }) => {
         e.preventDefault();
         try {
             const isUpdate = newVehicle.id;
-            const url = isUpdate ? `/api/school/vehicles/${newVehicle.id}` : '/api/school/vehicles/create';
+            const path = isUpdate ? `/api/school/vehicles/${newVehicle.id}` : '/api/school/vehicles/create';
+            const url = getApiUrl(path);
             const method = isUpdate ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -63,7 +65,7 @@ const VehiclesTab = ({ token }) => {
     const handleDeleteVehicle = async (id, name) => {
         if (!window.confirm(`Delete vehicle "${name}"?`)) return;
         try {
-            const res = await fetch(`/api/school/vehicles/${id}`, {
+            const res = await fetch(getApiUrl(`/api/school/vehicles/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -90,7 +92,7 @@ const VehiclesTab = ({ token }) => {
 
         try {
             // First, find the student by phone number
-            const usersRes = await fetch('/api/school/users', {
+            const usersRes = await fetch(getApiUrl('/api/school/users'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -110,7 +112,7 @@ const VehiclesTab = ({ token }) => {
             }
 
             // Assign vehicle to student
-            const res = await fetch('/api/school/vehicles/assign', {
+            const res = await fetch(getApiUrl('/api/school/vehicles/assign'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ student_id: student.id, vehicle_id: assignVehicleId })

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 
 const EventsTab = ({ token }) => {
     const [events, setEvents] = useState([]);
@@ -15,7 +16,7 @@ const EventsTab = ({ token }) => {
 
     const fetchEvents = async () => {
         try {
-            const res = await fetch('/api/school/events', {
+            const res = await fetch(getApiUrl('/api/school/events'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -28,7 +29,7 @@ const EventsTab = ({ token }) => {
     const handleCreateEvent = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/school/events/create', {
+            const res = await fetch(getApiUrl('/api/school/events/create'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(newEvent)
@@ -47,7 +48,7 @@ const EventsTab = ({ token }) => {
     const handleDeleteEvent = async (id, title) => {
         if (!window.confirm(`Delete event "${title}"?`)) return;
         try {
-            const res = await fetch(`/api/school/events/${id}`, {
+            const res = await fetch(getApiUrl(`/api/school/events/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
