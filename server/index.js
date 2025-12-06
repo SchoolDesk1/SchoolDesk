@@ -15,7 +15,10 @@ const { loadSheddingMiddleware } = require('./middleware/loadShedding');
 
 // Basic Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL ? process.env.CLIENT_URL : '*', // Allow all if not configured (DEV ONLY)
+    origin: function (origin, callback) {
+        // Allow all origins by reflecting the request origin
+        callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
