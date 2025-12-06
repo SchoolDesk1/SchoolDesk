@@ -10,9 +10,26 @@ exports.uploadHomework = async (req, res) => {
         return res.status(400).json({ message: 'Title is required.' });
     }
 
-    const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    let fileUrl = null;
 
     try {
+        if (req.file) {
+            const fileName = `homework/${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('uploads')
+                .upload(fileName, req.file.buffer, {
+                    contentType: req.file.mimetype
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = supabase.storage
+                .from('uploads')
+                .getPublicUrl(fileName);
+
+            fileUrl = publicUrlData.publicUrl;
+        }
+
         const { data, error } = await supabase
             .from('homework')
             .insert({

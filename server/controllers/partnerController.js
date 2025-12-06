@@ -355,7 +355,7 @@ exports.getReferralLink = async (req, res) => {
 
         if (!partner) return res.status(500).json({ message: 'Server error' });
 
-        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
         const referralLink = `${baseUrl}/signup?ref=${partner.unique_code}`;
 
         res.json({

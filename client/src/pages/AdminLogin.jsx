@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { getApiUrl } from '../config/api';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ const AdminLogin = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/auth/login-super-admin', {
+            const response = await fetch(getApiUrl('/auth/login-super-admin'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

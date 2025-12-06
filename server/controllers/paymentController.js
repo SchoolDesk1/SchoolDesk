@@ -153,8 +153,8 @@ exports.createOrder = async (req, res) => {
                 customer_phone: school.contact_phone || '9999999999'
             },
             order_meta: {
-                return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/verify?order_id=${orderId}`,
-                notify_url: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/webhook`
+                return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment/verify?order_id=${orderId}`,
+                notify_url: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/payment/webhook`
             },
             order_note: `${plan.name} subscription for ${school.school_name}`
         };
