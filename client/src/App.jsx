@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HelmetProvider } from 'react-helmet-async';
@@ -23,18 +23,6 @@ import Footer from './components/Footer';
 
 const PrivateRoute = ({ children, role }) => {
     const { user, loading } = useAuth();
-
-    // Prevent browser caching of authenticated pages
-    useEffect(() => {
-        window.history.pushState(null, '', window.location.href);
-        window.onpopstate = function () {
-            window.history.pushState(null, '', window.location.href);
-        };
-
-        return () => {
-            window.onpopstate = null;
-        };
-    }, []);
 
     if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
 
