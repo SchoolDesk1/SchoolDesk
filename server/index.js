@@ -14,11 +14,11 @@ const { autoPriority } = require('./middleware/priorityQueue');
 const { loadSheddingMiddleware } = require('./middleware/loadShedding');
 
 // Basic Middleware
-// Basic Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*', // Restrict this in production!
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: process.env.CLIENT_URL ? process.env.CLIENT_URL : '*', // Allow all if not configured (DEV ONLY)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));

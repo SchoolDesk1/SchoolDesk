@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SEO from '../../components/SEO';
+import { getApiUrl } from '../../config/api';
 
 const PartnerLogin = () => {
     const navigate = useNavigate();
@@ -37,7 +38,7 @@ const PartnerLogin = () => {
         setError('');
 
         try {
-            const response = await fetch('/api/partner/login', {
+            const response = await fetch(getApiUrl('/api/partner/login'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
