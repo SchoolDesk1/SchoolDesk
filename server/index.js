@@ -85,6 +85,7 @@ app.use((err, req, res, next) => {
 
 
 app.listen(PORT, () => {
+    console.log('--- SERVER STARTING WITH FIX V2 (Consolidated API Handling) ---');
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                  SchoolDesk Server                        ║

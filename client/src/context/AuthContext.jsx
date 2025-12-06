@@ -41,18 +41,19 @@ export const AuthProvider = ({ children }) => {
             const res = await fetch('/api/auth/me', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (res.ok) {
+
+            const contentType = res.headers.get("content-type");
+            if (res.ok && contentType && contentType.includes("application/json")) {
                 const userData = await res.json();
                 setUser(userData);
                 localStorage.setItem('user', JSON.stringify(userData));
+            } else if (res.status === 401) {
+                // Token invalid
+                if (!storedUser) logout();
             } else {
-                // Only logout if we don't have a stored user  AND the token is truly invalid
-                if (!storedUser && res.status === 401) {
-                    logout();
-                } else {
-                    console.warn("Token refresh failed but user data exists in localStorage");
-                }
+                console.warn("Refresh user failed: Non-JSON or error response", res.status);
             }
+
         } catch (err) {
             console.error("Failed to refresh user:", err);
             // Don't logout on network errors, keep the stored user

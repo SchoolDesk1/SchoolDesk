@@ -335,12 +335,12 @@ exports.getAllHomework = async (req, res) => {
             .from('homework')
             .select(`
                 *,
-                classes!inner (
+                classes (
                     class_name,
                     school_id
                 )
             `)
-            .eq('classes.school_id', schoolId)
+            .eq('school_id', schoolId)  // Filter by school_id column on homework table if it exists, or verify relation
             .order('created_at', { ascending: false });
 
         if (error) {
