@@ -89,7 +89,8 @@ const SchoolSignup = () => {
 
         } catch (err) {
             console.error('Registration error:', err);
-            setError(err.message || 'Registration failed. Please try again.');
+            const apiUrl = getApiUrl('/api/auth/register-school');
+            setError(`Error: ${err.message}. Attempted to fetch: ${apiUrl}. Check console for details.`);
         } finally {
             setLoading(false);
         }
