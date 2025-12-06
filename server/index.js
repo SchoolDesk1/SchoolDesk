@@ -69,7 +69,7 @@ app.use(/^\/api\//, (req, res) => {
 });
 
 // SPA fallback for non-API routes (client-side routing)
-app.get('*', (req, res) => {
+app.get(/(.*)/, (req, res) => {
     // Only serve index.html for non-API routes
     if (req.originalUrl.startsWith('/api')) {
         return res.status(404).json({ error: 'API endpoint not found' });
