@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import apiClient from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import PremiumLayout from '../components/PremiumLayout';
 import SEO from '../components/SEO';
 import { Loader2, School, Mail, Lock, User, Phone, MapPin, Tag, Check } from 'lucide-react';
-import { getApiUrl } from '../config/api';
+
 
 const SchoolSignup = () => {
     const [formData, setFormData] = useState({
@@ -53,35 +54,17 @@ const SchoolSignup = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/api/auth/register-school'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    school_name: formData.school_name,
-                    email: formData.email,
-                    password: formData.password,
-                    contact_person: formData.contact_person,
-                    contact_phone: formData.contact_phone,
-                    address: formData.address,
-                    partnerCode: formData.partnerCode
-                })
+            const data = await apiClient.post('/api/auth/register-school', {
+                school_name: formData.school_name,
+                email: formData.email,
+                password: formData.password,
+                contact_person: formData.contact_person,
+                contact_phone: formData.contact_phone,
+                address: formData.address,
+                partnerCode: formData.partnerCode
             });
 
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                if (!import.meta.env.VITE_API_URL) {
-                    throw new Error('Backend server not configured. Please contact support.');
-                }
-                throw new Error('Server temporarily unavailable. Please try again.');
-            }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Registration failed');
-            }
-
-            setSuccess(data.message);
+            setSuccess(data.message || 'Registration successful!');
 
             setTimeout(() => {
                 navigate('/login');
@@ -89,8 +72,7 @@ const SchoolSignup = () => {
 
         } catch (err) {
             console.error('Registration error:', err);
-            const apiUrl = getApiUrl('/api/auth/register-school');
-            setError(`Error: ${err.message}. Attempted to fetch: ${apiUrl}. Check console for details.`);
+            setError(err.message);
         } finally {
             setLoading(false);
         }

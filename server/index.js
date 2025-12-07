@@ -15,10 +15,13 @@ const { loadSheddingMiddleware } = require('./middleware/loadShedding');
 
 // Basic Middleware
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow all origins by reflecting the request origin
-        callback(null, true);
-    },
+    origin: [
+        'https://schooldesk.co.in',
+        'https://www.schooldesk.co.in',
+        'https://schooldesk-api.onrender.com',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
