@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, X, CheckCircle2, AlertCircle, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 const PromoCodesTab = () => {
     const [promoCodes, setPromoCodes] = useState([]);
@@ -20,13 +21,14 @@ const PromoCodesTab = () => {
         usageLimit: ''
     });
 
+    const { token } = useAuth();
+
     useEffect(() => {
-        fetchPromoCodes();
-    }, []);
+        if (token) fetchPromoCodes();
+    }, [token]);
 
     const fetchPromoCodes = async () => {
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch('/api/admin/promocodes', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -42,7 +44,6 @@ const PromoCodesTab = () => {
     const handleAddPromoCode = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch('/api/admin/promocodes', {
                 method: 'POST',
                 headers: {
@@ -79,7 +80,6 @@ const PromoCodesTab = () => {
         if (!window.confirm('Are you sure you want to delete this promo code?')) return;
 
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch(`/api/admin/promocodes/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }

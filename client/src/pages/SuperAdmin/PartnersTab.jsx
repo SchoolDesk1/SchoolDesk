@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye, MoreVertical, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 const PartnersTab = () => {
     const [partners, setPartners] = useState([]);
@@ -19,13 +20,14 @@ const PartnersTab = () => {
         password: ''
     });
 
+    const { token } = useAuth();
+
     useEffect(() => {
-        fetchPartners();
-    }, []);
+        if (token) fetchPartners();
+    }, [token]);
 
     const fetchPartners = async () => {
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch('/api/admin/partners', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -41,7 +43,6 @@ const PartnersTab = () => {
     const handleAddPartner = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch('/api/admin/partners', {
                 method: 'POST',
                 headers: {
@@ -67,7 +68,6 @@ const PartnersTab = () => {
         if (!window.confirm('Are you sure you want to delete this partner?')) return;
 
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch(`/api/admin/partners/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }

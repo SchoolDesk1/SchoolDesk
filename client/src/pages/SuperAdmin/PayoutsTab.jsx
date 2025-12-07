@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle2, XCircle, AlertCircle, Clock, DollarSign, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 const PayoutsTab = () => {
     const [payouts, setPayouts] = useState([]);
@@ -8,13 +9,14 @@ const PayoutsTab = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [message, setMessage] = useState({ type: '', text: '' });
 
+    const { token } = useAuth();
+
     useEffect(() => {
-        fetchPayouts();
-    }, []);
+        if (token) fetchPayouts();
+    }, [token]);
 
     const fetchPayouts = async () => {
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch('/api/admin/payouts', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -31,7 +33,6 @@ const PayoutsTab = () => {
         if (!window.confirm(`Are you sure you want to mark this payout as ${status}?`)) return;
 
         try {
-            const token = localStorage.getItem('superAdminToken');
             const response = await fetch(`/api/admin/payouts/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -112,8 +113,8 @@ const PayoutsTab = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${payout.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                payout.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                            payout.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                             }`}>
                                             {payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
                                         </span>
