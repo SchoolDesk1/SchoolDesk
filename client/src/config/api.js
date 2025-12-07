@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 // 🛡️ FAIL-SAFE: If in PRODUCTION and no VITE_API_URL is set, use the Render Backend
 // This prevents the "405 Method Not Allowed" error on Vercel
 if (!API_URL && import.meta.env.PROD) {
-    console.warn('⚠️ VITE_API_URL missing! Using fallback: https://schooldesk-backend.onrender.com');
+    console.warn('⚠️ VITE_API_URL missing! Using fallback: https://schooldesk-api.onrender.com');
 }
 
 // Log the API URL status for debugging
@@ -19,7 +19,7 @@ export const getApiUrl = (path) => {
     // If in production but API_URL missing (fallback logic above didn't assign to const API_URL),
     // use the hardcoded fallback
     if (import.meta.env.PROD) {
-        return `https://schooldesk-backend.onrender.com${path}`;
+        return `https://schooldesk-api.onrender.com${path}`;
     }
 
     // DEV MODE:
