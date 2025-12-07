@@ -21,7 +21,7 @@ const AdminLogin = () => {
             const data = await apiClient.post('/api/auth/login-super-admin', { email, password });
 
             login(data, data.accessToken);
-            navigate('/super-admin');
+            navigate('/super-admin/dashboard');
 
         } catch (err) {
             setError(err.message);
