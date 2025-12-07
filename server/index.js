@@ -13,6 +13,9 @@ const PORT = process.env.PORT || 5000;
 const { autoPriority } = require('./middleware/priorityQueue');
 const { loadSheddingMiddleware } = require('./middleware/loadShedding');
 
+// Trust proxy for Render/Vercel HTTPS headers
+app.set('trust proxy', 1);
+
 // Basic Middleware
 app.use(cors({
     origin: [
