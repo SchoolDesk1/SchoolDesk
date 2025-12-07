@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SEO from '../../components/SEO';
-import { getApiUrl } from '../../config/api';
+import apiClient from '../../services/api';
 
 const PartnerLogin = () => {
     const navigate = useNavigate();
@@ -38,19 +38,7 @@ const PartnerLogin = () => {
         setError('');
 
         try {
-            const response = await fetch(getApiUrl('/api/partner/login'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
+            const data = await apiClient.post('/api/partner/login', formData);
 
             // Store JWT token
             localStorage.setItem('partnerToken', data.token);

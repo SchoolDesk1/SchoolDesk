@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import apiClient from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
-import { getApiUrl } from '../config/api';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
@@ -18,17 +18,7 @@ const AdminLogin = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(getApiUrl('/auth/login-super-admin'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
+            const data = await apiClient.post('/api/auth/login-super-admin', { email, password });
 
             login(data, data.accessToken);
             navigate('/super-admin');
