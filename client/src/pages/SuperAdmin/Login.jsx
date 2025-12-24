@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const SuperAdminLogin = () => {
@@ -17,17 +17,17 @@ const SuperAdminLogin = () => {
 
         try {
             console.log('Attempting Super Admin login...');
-            const response = await axios.post('/api/auth/login-super-admin', {
+            const response = await apiClient.post('/api/auth/login-super-admin', {
                 secretKey
             });
 
-            console.log('Login response:', response.data);
-            login(response.data.user, response.data.accessToken);
+            console.log('Login response:', response);
+            login(response.user, response.accessToken);
             console.log('Navigating to dashboard...');
             navigate('/super-admin/dashboard');
         } catch (err) {
             console.error('Login error:', err);
-            setError(err.response?.data?.message || 'Invalid secret key');
+            setError(err.message || 'Invalid secret key');
             setLoading(false);
         }
     };

@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config/api';
+import { usePlanLimits } from '../../hooks/usePlanLimits';
+import UpgradePopup from '../../components/UpgradePopup';
 
 const EventsTab = ({ token }) => {
+    const { checkAccess, planType } = usePlanLimits();
+    const [upgradePopup, setUpgradePopup] = useState({ open: false, message: '', type: 'limit' });
+    const isAllowed = checkAccess('events');
+
     const [events, setEvents] = useState([]);
     const [newEvent, setNewEvent] = useState({
         title: '',
@@ -11,8 +17,8 @@ const EventsTab = ({ token }) => {
     });
 
     useEffect(() => {
-        fetchEvents();
-    }, []);
+        if (isAllowed) fetchEvents();
+    }, [isAllowed]);
 
     const fetchEvents = async () => {
         try {
@@ -34,6 +40,17 @@ const EventsTab = ({ token }) => {
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(newEvent)
             });
+
+            if (res.status === 403) {
+                const data = await res.json();
+                setUpgradePopup({
+                    open: true,
+                    message: data.message || "Event creation limit reached.",
+                    type: data.code === 'PLAN_EXPIRED' ? 'expired' : 'limit'
+                });
+                return;
+            }
+
             if (res.ok) {
                 setNewEvent({ title: '', event_date: '', description: '', category: 'General' });
                 fetchEvents();
@@ -73,8 +90,34 @@ const EventsTab = ({ token }) => {
         return colors[category] || colors['General'];
     };
 
+    if (!isAllowed) {
+        return (
+            <div className="animate-fade-in flex flex-col items-center justify-center h-full min-h-[500px] text-center p-8 bg-white/50 rounded-3xl border-2 border-dashed border-gray-200">
+                <div className="text-8xl mb-6 grayscale opacity-50">📅</div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-4">Events Calendar Locked</h2>
+                <p className="text-gray-600 max-w-md mb-8 text-lg">
+                    Schedule exams, holidays, and school events with our digital calendar. Keep parents informed instantly.
+                    <br /><br />
+                    <span className="font-bold text-indigo-600">Available in Standard & Premium Plans.</span>
+                </p>
+                <button
+                    onClick={() => window.location.href = '/school/dashboard?tab=subscription'}
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:scale-105 transition-all"
+                >
+                    Upgrade to Unlock 🚀
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="animate-fade-in">
+            <UpgradePopup
+                isOpen={upgradePopup.open}
+                onClose={() => setUpgradePopup({ ...upgradePopup, open: false })}
+                message={upgradePopup.message}
+                type={upgradePopup.type}
+            />
             <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
                 <span className="mr-3">📅</span> Events Calendar
             </h2>

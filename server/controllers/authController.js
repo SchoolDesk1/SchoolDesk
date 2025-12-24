@@ -2,6 +2,7 @@ const supabase = require('../supabase');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const PLAN_LIMITS = require('../config/plans');
 
 dotenv.config();
 
@@ -171,8 +172,8 @@ exports.registerSchool = async (req, res) => {
                 address,
                 plan_type: 'trial',
                 plan_expiry_date: formattedExpiry,
-                max_students: 20,
-                max_classes: 2,
+                max_students: PLAN_LIMITS.trial.max_students,
+                max_classes: PLAN_LIMITS.trial.max_classes,
                 status: 'active',
                 partner_code: validPartnerCode
             })

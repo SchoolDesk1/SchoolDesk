@@ -81,11 +81,11 @@ const SchoolSignup = () => {
     return (
         <PremiumLayout
             title="Start Your Free Trial"
-            subtitle="Join 500+ schools transforming their management"
+            subtitle="Join 500+ institutes transforming their management"
         >
             <SEO
                 title="Sign Up for SchoolDesk - Free 14-Day Trial"
-                description="Register your school with SchoolDesk today. Start your 14-day free trial and experience the future of school management."
+                description="Register your institute with SchoolDesk today. Start your 14-day free trial and experience the future of institute management."
             />
             <div className="text-center mb-8">
                 <div className="inline-block p-4 rounded-2xl bg-white/5 border border-white/10 mb-4">
@@ -110,7 +110,7 @@ const SchoolSignup = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300 ml-1">School Name</label>
+                        <label className="text-sm font-medium text-gray-300 ml-1">Institute Name</label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <School size={18} className="text-gray-500 group-focus-within:text-purple-400 transition-colors" />
@@ -121,7 +121,7 @@ const SchoolSignup = () => {
                                 value={formData.school_name}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none text-white placeholder-gray-500 transition-all"
-                                placeholder="Green Valley Academy"
+                                placeholder="Green Valley Institute"
                                 required
                             />
                         </div>
@@ -229,7 +229,7 @@ const SchoolSignup = () => {
                             onChange={handleChange}
                             rows="2"
                             className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none text-white placeholder-gray-500 transition-all resize-none"
-                            placeholder="School Address"
+                            placeholder="Institute Address"
                         ></textarea>
                     </div>
                 </div>

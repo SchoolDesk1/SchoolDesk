@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../../config/api';
+import { usePlanLimits } from '../../hooks/usePlanLimits';
+import UpgradePopup from '../../components/UpgradePopup';
 
 const VehiclesTab = ({ token }) => {
+    const { checkAccess, planType } = usePlanLimits();
+    const [upgradePopup, setUpgradePopup] = useState({ open: false, message: '', type: 'limit' });
+    const isAllowed = checkAccess('vehicles');
+
     const [vehicles, setVehicles] = useState([]);
     const [newVehicle, setNewVehicle] = useState({
         vehicle_name: '',
@@ -133,8 +139,34 @@ const VehiclesTab = ({ token }) => {
         }
     };
 
+    if (!isAllowed) {
+        return (
+            <div className="animate-fade-in flex flex-col items-center justify-center h-full min-h-[500px] text-center p-8 bg-white/50 rounded-3xl border-2 border-dashed border-gray-200">
+                <div className="text-8xl mb-6 grayscale opacity-50">🚌</div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-4">Vehicle Management Locked</h2>
+                <p className="text-gray-600 max-w-md mb-8 text-lg">
+                    Manage your school bus fleet, routes, and drivers with our advanced Vehicle Management system.
+                    <br /><br />
+                    <span className="font-bold text-indigo-600">Available in Standard & Premium Plans.</span>
+                </p>
+                <button
+                    onClick={() => window.location.href = '/school/dashboard?tab=subscription'} // or open popup
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:scale-105 transition-all"
+                >
+                    Upgrade to Unlock 🚀
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="animate-fade-in">
+            <UpgradePopup
+                isOpen={upgradePopup.open}
+                onClose={() => setUpgradePopup({ ...upgradePopup, open: false })}
+                message={upgradePopup.message}
+                type={upgradePopup.type}
+            />
             <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
                 <span className="mr-3">🚌</span> Vehicle Management
             </h2>

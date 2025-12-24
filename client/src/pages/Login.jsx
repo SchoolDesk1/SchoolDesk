@@ -82,11 +82,11 @@ const Login = () => {
     return (
         <PremiumLayout
             title="Welcome Back"
-            subtitle="Sign in to manage your school"
+            subtitle="Sign in to manage your institute"
         >
             <SEO
                 title="Login - SchoolDesk"
-                description="Secure login for SchoolDesk. Access your dashboard for school administration, teaching tools, or parent portal."
+                description="Secure login for SchoolDesk. Access your dashboard for institute administration, teaching tools, or parent portal."
             />
             <div className="text-center mb-8">
                 <div className="inline-block p-4 rounded-2xl bg-white/5 border border-white/10 mb-4">
@@ -105,7 +105,7 @@ const Login = () => {
                             : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        {r === 'school_admin' ? 'School' : r.charAt(0).toUpperCase() + r.slice(1)}
+                        {r === 'school_admin' ? 'Institute' : r.charAt(0).toUpperCase() + r.slice(1)}
                     </button>
                 ))}
             </div>
@@ -131,7 +131,7 @@ const Login = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none text-white placeholder-gray-500 transition-all"
-                                    placeholder="admin@school.com"
+                                    placeholder="admin@institute.com"
                                     required
                                 />
                             </div>
@@ -210,7 +210,7 @@ const Login = () => {
 
             <div className="mt-8 text-center pt-6 border-t border-white/10">
                 <p className="text-gray-400 text-sm">
-                    Don't have a school account?{' '}
+                    Don't have an institute account?{' '}
                     <Link to="/signup" className="text-purple-400 hover:text-purple-300 font-medium transition-colors">
                         Start Free Trial
                     </Link>

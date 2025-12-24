@@ -45,7 +45,7 @@ const Home = () => {
     ];
 
     const stats = [
-        { number: "50+", label: "Active Schools", icon: Award },
+        { number: "50+", label: "Active Institutes", icon: Award },
         { number: "5K+", label: "Happy Students", icon: Users },
         { number: "99.9%", label: "Uptime", icon: TrendingUp },
         { number: "24/7", label: "Support", icon: MessageSquare },
@@ -54,8 +54,8 @@ const Home = () => {
     return (
         <div className="landing-page">
             <SEO
-                title="SchoolDesk - Smartest School Management Software"
-                description="Streamline your school processing with SchoolDesk. Manage students, fees, exams, and more with our all-in-one cloud based platform."
+                title="SchoolDesk - Smartest Institute Management Software"
+                description="Streamline your institute processing with SchoolDesk. Manage students, fees, exams, and more with our all-in-one cloud based platform."
                 type="website"
             />
             {/* Cursor Glow Effect */}
@@ -85,7 +85,7 @@ const Home = () => {
                         className="hero-badge"
                     >
                         <Sparkles size={16} />
-                        <span>The Future of School Management</span>
+                        <span>The Future of Institute Management</span>
                     </motion.div>
 
                     <motion.h1
@@ -94,7 +94,7 @@ const Home = () => {
                         transition={{ duration: 0.8, delay: 0.2 }}
                         className="hero-title-modern"
                     >
-                        Manage Your School
+                        Manage Your Institute
                         <span className="gradient-text-shine"> Like Never Before</span>
                     </motion.h1>
 
@@ -104,7 +104,7 @@ const Home = () => {
                         transition={{ duration: 0.8, delay: 0.4 }}
                         className="hero-description"
                     >
-                        SchoolDesk is the all-in-one platform that brings schools, teachers, students,
+                        SchoolDesk is the all-in-one platform that brings institutes, teachers, students,
                         and parents together. Experience seamless management with powerful features.
                     </motion.p>
 
@@ -136,7 +136,7 @@ const Home = () => {
                                 <stat.icon size={24} className="stat-icon" />
                                 <div>
                                     <div className="stat-number">{stat.number}</div>
-                                    <div className="stat-label">{stat.label}</div>
+                                    <div className="stat-label">{stat.label.replace('Schools', 'Institutes')}</div>
                                 </div>
                             </div>
                         ))}
@@ -202,7 +202,7 @@ const Home = () => {
                                 <span>Why Choose Us</span>
                             </div>
                             <h2 className="section-title-modern">
-                                Built for <span className="gradient-text-shine">Modern Schools</span>
+                                Built for <span className="gradient-text-shine">Modern Institutes</span>
                             </h2>
                             <p className="section-description">
                                 We've designed SchoolDesk with cutting-edge technology to provide
@@ -276,7 +276,7 @@ const Home = () => {
                             Simple, <span className="gradient-text-shine">Transparent Pricing</span>
                         </h2>
                         <p className="section-description">
-                            Choose the perfect plan for your school. No hidden fees, cancel anytime.
+                            Choose the perfect plan for your institute. No hidden fees, cancel anytime.
                         </p>
                     </motion.div>
 
@@ -320,7 +320,7 @@ const Home = () => {
                                 <span className="price-amount">499</span>
                                 <span className="period">/mo</span>
                             </div>
-                            <p className="pricing-duration">Perfect for small schools</p>
+                            <p className="pricing-duration">Perfect for small institutes</p>
                             <ul className="pricing-features">
                                 <li><Check size={20} /> Up to 8 Classes</li>
                                 <li><Check size={20} /> Up to 100 Students</li>
@@ -407,7 +407,7 @@ const Home = () => {
                     >
                         <div className="section-badge">
                             <Heart size={16} />
-                            <span>Loved by Schools</span>
+                            <span>Loved by Institutes</span>
                         </div>
                         <h2 className="section-title-modern">
                             What <span className="gradient-text-shine">Educators Say</span>

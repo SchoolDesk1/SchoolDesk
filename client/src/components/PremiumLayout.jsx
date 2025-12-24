@@ -75,8 +75,8 @@ const PremiumLayout = ({ children, title, subtitle }) => {
             {/* Main Content Card */}
             <div className="relative z-10 w-full max-w-md">
                 <div className="text-center mb-8 animate-in" style={{ animationDelay: '0.1s' }}>
-                    <h1 className="text-2xl sm:text-3xl font-bold gradient-text-animated mb-2">{title}</h1>
-                    {subtitle && <p className="text-gray-400 text-sm sm:text-base">{subtitle}</p>}
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white relative z-10 opacity-100 mb-2">{title}</h1>
+                    {subtitle && <p className="text-white/90 text-sm sm:text-base relative z-10">{subtitle}</p>}
                 </div>
 
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl animate-in" style={{ animationDelay: '0.2s' }}>

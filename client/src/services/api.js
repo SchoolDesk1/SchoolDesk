@@ -1,4 +1,4 @@
-import API_URL from '../config/api';
+import { getApiUrl } from '../config/api';
 
 const apiClient = {
     // Helper to get full headers with token
@@ -17,8 +17,8 @@ const apiClient = {
     async request(endpoint, options = {}) {
         // Ensure endpoint starts with / for consistency
         const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-        // Use API_URL which handles the logic of selecting the right URL
-        const url = `${API_URL || 'https://schooldesk-api.onrender.com'}${path}`;
+        // Use getApiUrl helper to correctly handle local vs production URLs
+        const url = getApiUrl(path);
 
         const config = {
             ...options,

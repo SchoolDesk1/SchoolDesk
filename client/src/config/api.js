@@ -1,31 +1,27 @@
 // API Configuration for development and production
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-// 🛡️ FAIL-SAFE: If in PRODUCTION and no VITE_API_URL is set, use the Render Backend
-// This prevents the "405 Method Not Allowed" error on Vercel
-if (!API_URL && import.meta.env.PROD) {
-    console.warn('⚠️ VITE_API_URL missing! Using fallback: https://schooldesk-api.onrender.com');
-}
-
 // Log the API URL status for debugging
-console.log('🔌 API Configuration:', API_URL ? `Connected to ${API_URL}` : 'Running in Local/Proxy Mode');
+console.log('🔌 API Configuration:', API_URL ? `Connected to ${API_URL}` : 'Using Vite Proxy (Dev Mode)');
 
 export const getApiUrl = (path) => {
-    // If API_URL is set (production/custom), use it.
+    // Ensure path starts with /
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    // If API_URL is explicitly set (production/custom), use it
     if (API_URL) {
-        return `${API_URL}${path}`;
+        return `${API_URL}${normalizedPath}`;
     }
 
-    // If in production but API_URL missing (fallback logic above didn't assign to const API_URL),
-    // use the hardcoded fallback
+    // If in production but API_URL missing, use the hardcoded fallback
     if (import.meta.env.PROD) {
-        return `https://schooldesk-api.onrender.com${path}`;
+        return `https://schooldesk-api.onrender.com${normalizedPath}`;
     }
 
-    // DEV MODE:
-    // If we are in dev, assuming proxy is set in vite.config.js, we return just the path.
-    // However, to be extra safe against proxy failures:
-    return `http://localhost:5000${path}`;
+    // DEV MODE: Return just the path - Vite proxy will forward to backend
+    // This allows the Vite dev server proxy to handle the request
+    return normalizedPath;
 };
 
 export default API_URL;
+
